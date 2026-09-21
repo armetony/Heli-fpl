@@ -17,6 +17,15 @@ for m in root.findall(".//METAR"):
  lat,lon=num(txt(m,"latitude")),num(txt(m,"longitude"))
  if lat is None or lon is None: continue
  vis=num(txt(m,"visibility_statute_mi")); vism=None if vis is None else round(vis*1609.344)
+ if vism is None:
+  raw=txt(m,"raw_text") or ""
+  import re
+  toks=raw.split()
+  for tok in toks[3:12]:
+   if tok=="9999": vism=10000; break
+   if re.fullmatch(r"\\d{4}",tok):
+    n=int(tok)
+    if 50 <= n <= 9998: vism=n; break
  ceil=None
  for sk in m.findall(".//sky_condition"):
   cov=sk.attrib.get("sky_cover",""); base=num(sk.attrib.get("cloud_base_ft_agl"))
