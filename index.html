@@ -1,0 +1,970 @@
+<!doctype html><html lang="it"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HELI FPL — BETA 0.22</title>
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.css">
+<style>
+*{box-sizing:border-box}html,body{height:100%;margin:0;font-family:Segoe UI,Arial;background:#07111d;color:#eef7ff}
+header{height:68px;padding:9px 16px;background:#0b1724;display:flex;align-items:center;border-bottom:1px solid #294158}
+.brand{font-size:25px;font-weight:800}.sub{font-size:11px;color:#91a7ba}.status{margin-left:auto;padding:8px 12px;border:1px solid #35536c;border-radius:8px;font-size:12px}.ok{color:#70e6a3}.bad{color:#ff8080}
+.mapswitch{margin-left:auto;display:flex;gap:5px}.mapbtn{padding:8px 10px;font-size:11px}
+.mapbtn.active{background:#0d8fb7;border-color:#4ed7ff}.status{margin-left:10px!important}
+main{height:calc(100% - 68px);display:grid;grid-template-columns:1fr 390px}.mapbox{position:relative}#map{height:100%;width:100%}
+.coord,.hint{position:absolute;z-index:5;background:#07111ddd;border:1px solid #35536c;border-radius:7px;padding:8px 10px}.coord{bottom:25px;left:12px;font:12px Consolas}.hint{top:12px;left:12px;font-size:11px}
+.side{background:#101d2b;display:flex;flex-direction:column;border-left:1px solid #294158}.meta{padding:10px;border-bottom:1px solid #294158;display:grid;grid-template-columns:1fr 85px;gap:8px}
+label{font-size:10px;color:#91a7ba}input,select{width:100%;padding:8px;background:#07131f;color:white;border:1px solid #35516a;border-radius:7px}
+.sum{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:10px}.metric{background:#091622;border:1px solid #223b50;border-radius:8px;padding:8px}.metric b{display:block;font-size:17px}.metric small{font-size:9px;color:#91a7ba}
+.title{padding:7px 12px;font-weight:700}.list{flex:1;overflow:auto;padding:0 10px}.row{display:grid;grid-template-columns:28px 1fr 65px 25px;gap:6px;align-items:center;padding:9px 3px;border-bottom:1px solid #21384b}.n{width:25px;height:25px;border-radius:50%;display:grid;place-items:center;background:#18394f;color:#4ed7ff}.leg{font-size:10px;color:#91a7ba}
+button{padding:9px;border:1px solid #36536b;background:#172a3c;color:white;border-radius:8px;cursor:pointer}.primary{background:#0d8fb7;border-color:#4ed7ff;font-weight:700}.x{background:none;border:0;color:#ff9999}.actions{padding:10px;border-top:1px solid #294158;display:grid;grid-template-columns:1fr 1fr;gap:7px}.wide{grid-column:1/-1}.note{font-size:10px;color:#91a7ba;line-height:1.3}
+.pop input,.pop select{background:white;color:#111;margin:4px 0}.pop button{width:100%;margin-top:6px;background:#087fa4}
+
+.searchbar{position:absolute;z-index:8;top:54px;left:12px;width:390px;display:flex;gap:5px}
+.searchbar input{background:#07111de8}.searchres{position:absolute;z-index:9;top:94px;left:12px;width:390px;max-height:260px;overflow:auto;background:#0b1724ee;border:1px solid #35536c;border-radius:8px;display:none}
+.sr{padding:8px;border-bottom:1px solid #294158;cursor:pointer;font-size:12px}.sr:hover{background:#173047}
+.lab{position:absolute;z-index:7;right:12px;bottom:35px;width:420px;background:#07111dea;border:1px solid #35536c;border-radius:10px;padding:10px}
+.labtop{display:flex;gap:5px;margin-bottom:7px}.labtop button{flex:1;padding:7px}.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}.mini{background:#101d2b;border:1px solid #294158;border-radius:6px;padding:6px;font-size:10px}.mini b{display:block;font-size:14px}
+#profile{width:100%;height:120px;background:#0b1724;border-radius:6px;margin-top:7px}
+.simrow{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-top:6px}.simrow input{padding:5px;font-size:11px}
+
+.dbmodal{position:fixed;z-index:100;inset:0;background:#02070dcc;display:none;align-items:center;justify-content:center}.dbbox{width:min(950px,92vw);max-height:82vh;background:#101d2b;border:1px solid #35536c;border-radius:12px;overflow:hidden}.dbhead{padding:12px 16px;display:flex;align-items:center;border-bottom:1px solid #294158}.dbhead button{margin-left:auto}.dbtools{padding:10px;display:grid;grid-template-columns:1fr auto;gap:8px}.dbtable{max-height:55vh;overflow:auto;padding:0 10px 12px}.dbrow{display:grid;grid-template-columns:1.3fr .8fr .8fr .8fr 2fr;gap:8px;align-items:center;padding:9px;border-bottom:1px solid #294158;font-size:12px}.dbrow button{padding:6px}.timeline{margin-top:7px;font-size:10px;color:#a8bdce;max-height:95px;overflow:auto}.tl{display:grid;grid-template-columns:55px 60px 60px 60px 1fr;gap:4px;border-bottom:1px solid #203647;padding:3px}
+
+.wxlegend{position:absolute;z-index:8;left:12px;bottom:66px;background:#07111de8;border:1px solid #35536c;border-radius:7px;padding:7px;font-size:10px;display:none}
+.wxchip{display:inline-block;margin-right:7px}.wxicon{font-size:18px}.wxpoint{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-size:18px;border:2px solid #fff;background:#23394dcc;box-shadow:0 0 0 2px #07111d}
+
+.helipanel{position:absolute;z-index:8;right:12px;top:54px;width:410px;background:#07111dee;border:1px solid #35536c;border-radius:9px;padding:9px}
+.helipanel summary{cursor:pointer;font-weight:700}.hgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-top:7px}.hgrid input{padding:5px;font-size:11px}
+.navmodal{position:fixed;z-index:110;inset:0;background:#02070ddd;display:none;align-items:center;justify-content:center}.navbox{width:min(1180px,94vw);max-height:88vh;background:#101d2b;border:1px solid #35536c;border-radius:12px;overflow:auto;padding:14px}
+.navhead{display:flex;align-items:center;gap:8px}.navhead button{margin-left:auto}.navtable{width:100%;border-collapse:collapse;font-size:11px;margin-top:10px}.navtable th,.navtable td{padding:6px;border-bottom:1px solid #294158;text-align:right}.navtable th:first-child,.navtable td:first-child{text-align:left}
+.aeroinfo{margin-top:8px;padding:8px;border:1px solid #294158;border-radius:7px;font-size:11px}.warn{color:#ffcc66}.okx{color:#74e39a}
+
+.wxguard{position:absolute;z-index:9;left:12px;top:98px;background:#07111def;border:1px solid #35536c;border-radius:8px;padding:8px;font-size:11px;max-width:390px}
+.wxguard label{display:flex;align-items:center;gap:7px;font-weight:700}.wxguard input{width:auto}
+.wxalert{margin-top:6px;padding:6px;border-radius:6px;background:#152536}.wxalert.danger{background:#4b1717}.wxalert.warnx{background:#493b13}.wxalert.good{background:#123c28}
+
+.terrainbadge{position:absolute;z-index:10;right:12px;bottom:14px;background:#07111ded;border:1px solid #35536c;border-radius:8px;padding:7px 9px;font-size:10px;max-width:360px}
+.obstacle-dot{width:14px;height:14px;background:#ff3b30;border:2px solid #fff;border-radius:2px;box-shadow:0 0 6px #000}
+.wxsummary{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-top:5px}.wxsummary span{background:#102131;padding:5px;border-radius:5px;text-align:center}
+</style>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#07111d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="HELI FPL">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="apple-touch-icon" href="./icons/icon-180.png">
+
+
+<style id="pwa-mobile">
+html,body{overscroll-behavior:none}
+body{padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
+@media(max-width:700px){
+  header{padding:6px 8px!important;gap:5px!important;flex-wrap:wrap}
+  header button,header input,header select{min-height:38px;font-size:11px}
+  #map{height:calc(100dvh - 112px)!important;min-height:520px}
+  .helipanel{top:auto!important;right:8px!important;left:8px!important;bottom:calc(8px + env(safe-area-inset-bottom));width:auto!important;max-height:38dvh;overflow:auto}
+  .wxguard{left:8px!important;right:8px!important;top:118px!important;max-width:none!important}
+  .terrainbadge{right:8px!important;left:8px!important;bottom:calc(8px + env(safe-area-inset-bottom));max-width:none!important;pointer-events:none}
+  .modal>div,.navbox,.dbbox{width:94vw!important;max-width:94vw!important;max-height:82dvh!important;overflow:auto}
+  .hgrid{grid-template-columns:repeat(2,1fr)!important}
+  .navtable{font-size:9px!important;min-width:900px}
+  .navbox{overflow:auto!important}
+  input,select,button{font-size:16px} /* avoids iOS input zoom */
+}
+</style>
+
+
+<style id="iphone-ui-v015">
+.mobile-nav,.mobile-drawer,.drawer-backdrop{display:none}
+@media(max-width:700px){
+ body{overflow:hidden}
+ #map{position:fixed!important;inset:calc(env(safe-area-inset-top) + 52px) 0 calc(env(safe-area-inset-bottom) + 62px) 0!important;height:auto!important;min-height:0!important}
+ header{position:fixed!important;z-index:40;top:env(safe-area-inset-top);left:0;right:0;height:52px;overflow-x:auto;flex-wrap:nowrap!important;background:#07111df2}
+ /* hide bulky desktop panels; mobile drawers expose them on demand */
+ .helipanel,.wxguard,.terrainbadge{display:none!important}
+ .mobile-nav{display:grid;position:fixed;z-index:80;left:0;right:0;bottom:0;padding:6px 5px calc(6px + env(safe-area-inset-bottom));grid-template-columns:repeat(5,1fr);gap:4px;background:#07111df5;border-top:1px solid #35536c}
+ .mobile-nav button{min-height:48px;border-radius:8px;font-size:10px;padding:3px}
+ .drawer-backdrop.show{display:block;position:fixed;z-index:88;inset:0;background:#0008}
+ .mobile-drawer{display:block;position:fixed;z-index:90;left:0;right:0;bottom:0;max-height:72dvh;transform:translateY(105%);transition:transform .22s ease;background:#0b1724;border:1px solid #35536c;border-radius:18px 18px 0 0;padding:10px 10px calc(12px + env(safe-area-inset-bottom));overflow:auto;box-shadow:0 -10px 35px #0008}
+ .mobile-drawer.open{transform:translateY(0)}
+ .drawer-handle{width:48px;height:5px;border-radius:5px;background:#71879a;margin:0 auto 8px}
+ .drawer-head{display:flex;justify-content:space-between;align-items:center;gap:8px;position:sticky;top:-10px;background:#0b1724;padding:8px 0;z-index:2}
+ .drawer-head b{font-size:15px}.drawer-close{min-width:42px;min-height:36px}
+ .mobile-card{border:1px solid #294158;background:#101f2e;border-radius:9px;padding:8px;margin:7px 0}
+ .mobile-actions{display:grid;grid-template-columns:1fr 1fr;gap:6px}.mobile-actions button{min-height:44px}
+ #mobilePlanList .mobile-card b{font-size:13px}
+ #mobileWxStatus.danger{background:#4b1717}#mobileWxStatus.warnx{background:#493b13}#mobileWxStatus.good{background:#123c28}
+}
+</style>
+
+<style id="iphone-compact-v016">
+@media(max-width:700px){
+ header{height:58px!important;padding:4px 6px!important;align-items:center!important;overflow:hidden!important}
+ .brand{min-width:94px!important;max-width:94px!important;font-size:16px!important;line-height:16px!important}
+ .brand .sub{font-size:8px!important;line-height:10px!important;white-space:normal!important}
+ .mapswitch{margin-left:2px!important;gap:3px!important;display:grid!important;grid-template-columns:repeat(3,1fr)!important;flex:1!important}
+ .mapbtn{min-width:0!important;height:46px!important;padding:2px 4px!important;font-size:9px!important;line-height:11px!important}
+ .online{display:none!important}
+ #map{top:calc(env(safe-area-inset-top) + 58px)!important;bottom:calc(env(safe-area-inset-bottom) + 60px)!important;left:0!important;right:0!important}
+ .searchbox,.search,.searchbar{max-width:calc(100vw - 12px)!important}
+ .mobile-nav{grid-template-columns:repeat(5,minmax(0,1fr))!important;padding:4px 4px calc(4px + env(safe-area-inset-bottom))!important;gap:3px!important}
+ .mobile-nav button{min-width:0!important;min-height:48px!important;font-size:9px!important;line-height:12px!important;padding:2px!important;overflow:hidden!important}
+ /* Hide desktop-only floating blocks that steal map area on phone */
+ .coord{transform:scale(.82);transform-origin:left bottom}
+ .hint{font-size:10px!important;max-width:calc(100vw - 20px)!important}
+}
+</style>
+
+<style id="iphone-v017">
+@media(max-width:700px){
+ header{height:50px!important;padding:2px 4px!important}
+ .brand{min-width:66px!important;max-width:66px!important;font-size:13px!important;line-height:13px!important}
+ .brand .sub{font-size:7px!important;line-height:8px!important}
+ .mapswitch{gap:2px!important}.mapbtn{height:40px!important;font-size:8px!important}
+ #map{top:calc(env(safe-area-inset-top) + 50px)!important}
+ .coord,.hint,.wxlegend{display:none!important}
+ .searchwrap,.searchbox{left:8px!important;right:8px!important;top:8px!important;width:auto!important;max-width:none!important}
+ .searchwrap input,.searchbox input{font-size:16px!important;min-width:0!important}
+}
+.vis-hero{font-size:38px;font-weight:900;line-height:1;margin:8px 0}
+.vis-unit{font-size:13px;color:#91a7ba}
+.wx-row{display:grid;grid-template-columns:1fr auto;gap:8px;padding:8px 0;border-bottom:1px solid #294158}
+.wx-raw{font-family:ui-monospace,monospace;font-size:11px;white-space:pre-wrap;word-break:break-word;background:#07111d;padding:8px;border-radius:7px}
+.cat-VFR{border-left:5px solid #35d07f}.cat-MVFR{border-left:5px solid #4ea4ff}.cat-IFR{border-left:5px solid #ff5252}.cat-LIFR{border-left:5px solid #d05cff}
+</style>
+
+<style id="iphone-approved-v018">
+.mobile-hud,.mobile-metrics,.mobile-wxstrip{display:none}
+@media(max-width:700px){
+ body{padding:0!important;background:#061321!important}
+ header{display:none!important}
+ main{height:100dvh!important;display:block!important}
+ .side{display:none!important}
+ #map{position:fixed!important;inset:calc(env(safe-area-inset-top) + 116px) 0 calc(env(safe-area-inset-bottom) + 168px) 0!important;height:auto!important;min-height:0!important}
+ .mobile-hud{display:block;position:fixed;z-index:75;top:env(safe-area-inset-top);left:0;right:0;height:116px;padding:5px 10px;background:linear-gradient(#071b2d,#0a2137);border-bottom:1px solid #31516c}
+ .mh-title{text-align:center;font-weight:900;font-size:20px;letter-spacing:.5px;height:30px}.mh-title small{display:block;font-size:8px;font-weight:500;color:#9db3c5;letter-spacing:0}
+ .mh-tabs{display:grid;grid-template-columns:1fr 1fr 1fr 52px;gap:5px;height:42px}.mh-tabs button{padding:4px;font-size:10px;min-width:0}.mh-tabs .active{background:#078fc0;border-color:#38d5ff}
+ .mh-search{display:grid;grid-template-columns:1fr 42px;gap:5px;margin-top:5px}.mh-search input{height:34px;font-size:16px;padding:6px 10px}.mh-search button{padding:2px;font-size:18px}
+ .searchbar{display:none!important}.searchres{top:calc(env(safe-area-inset-top) + 112px)!important;left:8px!important;right:8px!important;width:auto!important;max-height:38dvh!important}
+ .mobile-metrics{display:grid;position:fixed;z-index:74;top:calc(env(safe-area-inset-top) + 116px);left:8px;right:8px;grid-template-columns:repeat(5,1fr);background:#071726eF;border:1px solid #31516c;border-radius:9px;overflow:hidden}
+ .mobile-metrics div{padding:5px 4px;border-right:1px solid #31516c}.mobile-metrics div:last-child{border:0}.mobile-metrics small{display:block;font-size:7px;color:#b4c5d3}.mobile-metrics b{font-size:12px}
+ .mobile-wxstrip{display:grid;position:fixed;z-index:76;left:8px;right:8px;bottom:calc(env(safe-area-inset-bottom) + 62px);height:96px;grid-template-columns:110px 1fr;background:#071726f5;border:1px solid #31516c;border-radius:12px;padding:8px;gap:8px}
+ .mwx-vis{border-right:1px solid #31516c}.mwx-vis small{font-size:9px;text-decoration:underline}.mwx-vis b{display:block;font-size:25px;margin-top:7px}.mwx-detail{font-size:9px;overflow:hidden}.mwx-detail b{font-size:11px}.mwx-detail .rawline{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#bcd0df;margin-top:5px}
+ .mobile-nav{height:58px!important;padding:4px 5px calc(4px + env(safe-area-inset-bottom))!important;background:#071726!important}
+ .mobile-nav button{font-size:9px!important;line-height:11px!important;min-height:48px!important}
+ .mobile-nav .map-active{background:#078fc0!important;border-color:#38d5ff!important;font-weight:800}
+ .maplibregl-ctrl-top-right{top:48px!important}
+ .maplibregl-ctrl-bottom-right{bottom:5px!important}
+ .agl-marker{width:2px;height:70px;background:#ffe900;position:relative;box-shadow:0 0 3px #000;pointer-events:none}
+ .agl-marker:after{content:"";position:absolute;bottom:-5px;left:-5px;width:10px;height:5px;border:2px solid #ffe900;border-radius:50%}
+ .agl-label{position:absolute;left:7px;top:2px;min-width:76px;background:#07111de8;border:1px solid #536575;border-radius:5px;padding:3px 5px;color:white;font:700 9px system-ui;white-space:nowrap}
+ .agl-label em{display:block;color:#ffe900;font-style:normal;font-size:9px}
+ .wxpoint{width:28px!important;height:28px!important;font-size:14px!important}
+}
+</style>
+
+<style id="approved-mobile-v019">
+@media(max-width:700px){
+ html,body{height:100%;overflow:hidden;background:#061625!important}
+ .mobile-hud{height:132px!important;padding:4px 10px 6px!important;background:linear-gradient(180deg,#061827 0%,#09253b 100%)!important}
+ .mh-title{height:34px!important;font-size:20px!important;line-height:22px!important;padding-top:1px}.mh-title small{font-size:8px!important;line-height:10px!important}
+ .mh-tabs{height:42px!important;grid-template-columns:1fr 1fr 1fr 46px!important}.mh-tabs button{border-radius:8px!important;font-size:9px!important}
+ .mh-search{margin-top:6px!important}.mh-search input{height:38px!important;border-radius:9px!important;background:#071726!important;border:1px solid #31516c!important}
+ .mh-search button{height:38px!important;border-radius:9px!important}
+ #map{inset:calc(env(safe-area-inset-top) + 132px) 0 calc(env(safe-area-inset-bottom) + 174px) 0!important}
+ .mobile-metrics{top:calc(env(safe-area-inset-top) + 136px)!important;left:14px!important;right:14px!important;border-radius:9px!important}
+ .mobile-metrics div{padding:5px 6px!important}.mobile-metrics small{font-size:7px!important}.mobile-metrics b{font-size:11px!important}
+ .mobile-wxstrip{height:104px!important;bottom:calc(env(safe-area-inset-bottom) + 64px)!important;left:10px!important;right:10px!important;grid-template-columns:112px 1fr!important}
+ .mwx-vis b{font-size:27px!important}.mwx-detail{font-size:9px!important}
+ .mobile-nav{height:60px!important;grid-template-columns:repeat(5,1fr)!important}
+ .mobile-nav button{border-radius:9px!important}
+ .maplibregl-ctrl-top-right{top:58px!important}
+ .agl-marker{height:var(--agl-h,60px)!important}
+ .agl-label{font-size:8px!important;min-width:68px!important}
+ .agl-label em{font-size:8px!important}
+}
+</style>
+
+<style id="v021-3d-clean">
+@media(max-width:700px){
+ .agl-marker{width:1px!important;background:#ffe900!important;box-shadow:0 0 2px #000!important}
+ .agl-marker:after{width:7px!important;height:3px!important;left:-4px!important;bottom:-3px!important}
+ .agl-label{min-width:64px!important;padding:3px 4px!important;font-size:8px!important}
+ .agl-marker.tick .agl-label{display:none!important}
+ .agl-marker.tick{opacity:.65!important}
+ .agl-marker.major:nth-child(4n+1) .agl-label{left:auto!important;right:7px!important;text-align:right!important}
+}
+</style>
+</head><body>
+<div class="drawer-backdrop" id="drawerBackdrop"></div>
+<nav class="mobile-nav">
+ <button data-drawer="plan">☑<br>PIANO</button>
+ <button data-drawer="wx">🌧️<br>METEO</button>
+ <button id="mobileMapBtn" class="map-active">🗺️<br>MAPPA</button>
+ <button data-drawer="navlog">📋<br>NAVLOG</button>
+ <button data-drawer="terrain">•••<br>ALTRO</button>
+</nav>
+<section class="mobile-drawer" id="mobileDrawer">
+ <div class="drawer-handle"></div><div class="drawer-head"><b id="drawerTitle">HELI FPL</b><button class="drawer-close" id="drawerClose">✕</button></div>
+ <div id="drawerBody"></div>
+</section>
+
+
+<div class="mobile-hud">
+ <div class="mh-title">🇮🇹 HELI FPL 🇮🇹<small>BETA 0.22 • App sviluppata da Antonio Armentano</small></div>
+ <div class="mh-tabs">
+  <button class="mh-mode active" data-mode="road">🛣 STRADALE</button>
+  <button class="mh-mode" data-mode="aero">✈ AERONAUTICA</button>
+  <button class="mh-mode" data-mode="mountain">⛰ MONTAGNE</button>
+  <button id="mh3d">▱<br><b style="color:#73e58e">3D</b></button>
+ </div>
+ <div class="mh-search"><input id="mq" placeholder="Cerca strada, aeroporto, VOR, montagna…"><button id="msearch">⌕</button></div>
+</div>
+<div class="mobile-metrics">
+ <div><small>GS</small><b id="mhGs">120 kt</b></div><div><small>ALT</small><b id="mhAlt">2500 ft</b></div>
+ <div><small>AGL</small><b id="mhAgl">—</b></div><div><small>DIST DEST</small><b id="mhDist">—</b></div><div><small>ETE</small><b id="mhEte">—</b></div>
+</div>
+<div class="mobile-wxstrip">
+ <div class="mwx-vis"><small>VISIBILITÀ</small><b id="mwxVis">—</b><span id="mwxCat" style="font-size:9px">METAR</span></div>
+ <div class="mwx-detail"><b id="mwxStation">METAR/TAF</b><div id="mwxObs">Dati in acquisizione…</div><div class="rawline" id="mwxRaw"></div><div class="rawline" id="mwxTaf"></div></div>
+</div>
+<div id="pwaStatus" style="position:fixed;z-index:200;left:8px;right:8px;bottom:calc(8px + env(safe-area-inset-bottom));display:none;background:#07111df2;border:1px solid #35536c;border-radius:10px;padding:9px;color:#eaf4fb;font:12px system-ui">
+<b>HELI FPL PWA</b> <span id="pwaText"></span>
+<button id="pwaClose" style="float:right">OK</button>
+</div>
+
+<header><div><div class="brand">HELI FPL</div><div class="sub">Flight Plan Creator • BETA 0.22 METAR VISIBILITY • App sviluppata da Antonio Armentano</div></div><div class="mapswitch">
+      <button class="mapbtn active" data-map="road">🛣 STRADALE</button>
+      <button class="mapbtn" data-map="aero">✈ AERONAUTICA</button>
+      <button class="mapbtn" data-map="mountain">⛰ MONTAGNE</button>
+    </div><div id="status" class="status">○ CARICAMENTO MAPPA…</div></header>
+<main><section class="mapbox"><div id="map"></div><div class="hint"><b id="mapmode">STRADALE</b> • Clic sulla mappa → coordinate → waypoint</div>
+<div class="searchbar"><input id="q" placeholder="Cerca strada, aeroporto, VOR, montagna…"><button id="searchBtn">🔎 CERCA</button></div><div id="searchres" class="searchres"></div>
+<div class="wxguard"><label><input id="showWx" type="checkbox" checked> VEDI METEO SULLA MAPPA</label><div id="wxguardStatus" class="wxalert">Meteo non ancora acquisito. Il controllo viene eseguito automaticamente quando la rotta cambia o parte la simulazione.</div></div>
+<div class="lab"><div class="labtop"><button id="simBtn">▶ SIMULA</button><button id="weatherBtn">☁ METEO ROTTA</button><button id="view3d">3D</button></div>
+<div class="grid4"><div class="mini"><small>ALT</small><b id="sAlt">2500 ft</b></div><div class="mini"><small>GS</small><b id="sGs">120 kt</b></div><div class="mini"><small>VENTO</small><b id="sWind">—</b></div><div class="mini"><small>FUEL</small><b id="sFuel">—</b></div></div>
+<div style="display:flex;gap:10px;flex-wrap:wrap;font-size:10px;margin-top:7px">
+<span>🟢 CLEARANCE ADEGUATA</span><span>🟡 MARGINE RIDOTTO</span><span>🔴 CLEARANCE INSUFFICIENTE</span><span>⚫ OSTACOLO / TERRENO</span>
+</div><canvas id="profile" width="800" height="220"></canvas>
+<div id="clearanceMsg" style="font-size:10px;margin-top:4px;color:#a8bdce">Profilo sperimentale: il terreno reale DEM e gli ostacoli certificati saranno integrati nella fase successiva.</div><div id="timeline" class="timeline"></div>
+<div class="simrow"><div><label>Quota ft</label><input id="altFt" type="number" value="2500"></div><div><label>Fuel flow L/h</label><input id="ff" type="number" value="300"></div><div><label>Fuel iniziale L</label><input id="fuel0" type="number" value="1000"></div><div><label>Partenza</label><input id="depTime" type="datetime-local"></div></div></div><div id="coord" class="coord">LAT — &nbsp; LON —</div><details class="helipanel"><summary>🚁 PROFILO ELICOTTERO & RISERVE</summary>
+<div class="hgrid"><div><label>Tipo</label><input id="acType" value="HELICOPTER"></div><div><label>TAS kt</label><input id="acTas" type="number" value="120"></div><div><label>Fuel L</label><input id="acFuel" type="number" value="1000"></div><div><label>FF L/h</label><input id="acFf" type="number" value="300"></div><div><label>Riserva min</label><input id="acReserve" type="number" value="30"></div><div><label>Min clearance ft</label><input id="acClear" type="number" value="1000"></div></div>
+<div class="aeroinfo">Il profilo è configurabile: nessuna prestazione specifica viene presunta. TAS, consumo e riserva vengono usati nel NAVLOG e nella simulazione.</div></details><div class="terrainbadge" id="terrainBadge">3D: OFF • OSTACOLI: non caricati</div><div id="wxlegend" class="wxlegend"><span class=wxchip>☁ Nubi</span><span class=wxchip>🌧 Pioggia</span><span class=wxchip>⚡ Temporale</span><span class=wxchip>➤ Vento</span></div></section>
+<aside class="side"><div class="meta"><div><label>NOME PIANO</label><input id="name" value="TEST01"></div><div><label>GS kt</label><input id="gs" type="number" value="120" min="1"></div></div>
+<div class="sum"><div class="metric"><b id="nm">0.0</b><small>NM TOTALI</small></div><div class="metric"><b id="ete">00:00</b><small>ETE</small></div><div class="metric"><b id="count">0</b><small>WAYPOINT</small></div></div>
+<div class="title">PIANO DI VOLO</div><div id="list" class="list"></div>
+<div class="actions"><button id="fit">⌖ CENTRA</button><button id="rev">↕ INVERTI</button><button id="save">SALVA FILE</button><button id="open">APRI FILE</button><button id="dbBtn">DATABASE PIANI</button><button id="navlogBtn">NAVLOG ELICOTTERO</button><button id="dbSave">SALVA NEL DB</button><button id="check">✓ VERIFICA</button><button id="newp">NUOVO</button><button id="export" class="primary wide">ESPORTA GARMIN G1000 NXi (.FPL)</button><div class="note wide">Tre viste selezionabili: stradale, aeronautica e montagna. Le fonti online non sostituiscono AIP/carte ufficiali né la cartografia certificata di bordo. Verificare il file sul G1000 NXi reale prima dell'impiego.</div></div></aside></main>
+<div id="navmodal" class="navmodal"><div class="navbox"><div class="navhead"><b>NAVLOG ELICOTTERO — ANALISI ROTTA</b><button id="navClose">CHIUDI</button></div><div id="navsummary" class="aeroinfo"></div><div id="navcontent"></div></div></div>
+<div id="dbmodal" class="dbmodal"><div class="dbbox"><div class="dbhead"><b>DATABASE PIANI DI VOLO</b><button id="dbClose">CHIUDI</button></div><div class="dbtools"><input id="dbSearch" placeholder="Cerca nome piano…"><button id="dbNew">NUOVO PIANO</button></div><div id="dbtable" class="dbtable"></div></div></div>
+<input id="file" type="file" accept=".helifpl,.json" hidden>
+<script src="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.js">
+// PWA bootstrap — all paths are relative so GitHub Pages project URLs work.
+window.addEventListener('load', async () => {
+  const box=document.getElementById('pwaStatus'),txt=document.getElementById('pwaText');
+  document.getElementById('pwaClose').onclick=()=>box.style.display='none';
+  if ('serviceWorker' in navigator) {
+    try { await navigator.serviceWorker.register('./sw.js',{scope:'./'}); }
+    catch(e){ console.warn('SW registration failed',e); }
+  }
+  const ios=/iphone|ipad|ipod/i.test(navigator.userAgent);
+  const standalone=window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+  if(ios && !standalone && !sessionStorage.getItem('heliPwaHint')){
+    txt.textContent=' — in Safari: Condividi → Aggiungi alla schermata Home → Apri come app.';
+    box.style.display='block'; sessionStorage.setItem('heliPwaHint','1');
+  }
+});
+
+</script>
+<script>
+const $=id=>document.getElementById(id); let W=[], markers=[], loaded=false;
+const map=new maplibregl.Map({container:'map',style:'https://tiles.openfreemap.org/styles/liberty',center:[12.5,42.2],zoom:5.5});
+
+map.addControl(new maplibregl.NavigationControl(),'top-right');
+let currentMapMode='road';
+function ensureExtraSources(){
+  if(!map.getSource('topo')){
+    map.addSource('topo',{type:'raster',tiles:['https://a.tile.opentopomap.org/{z}/{x}/{y}.png','https://b.tile.opentopomap.org/{z}/{x}/{y}.png','https://c.tile.opentopomap.org/{z}/{x}/{y}.png'],tileSize:256,minzoom:1,maxzoom:17,attribution:'© OpenStreetMap contributors, SRTM | © OpenTopoMap (CC-BY-SA)'});
+    map.addLayer({id:'topo-layer',type:'raster',source:'topo',layout:{visibility:'none'}});
+  }
+  if(!map.getSource('ofm')){
+    map.addSource('ofm',{type:'raster',tiles:['https://nwy-tiles-api.prod.newaydata.com/tiles/{z}/{x}/{y}.png?path=latest/aero/latest'],tileSize:512,minzoom:7,maxzoom:16,attribution:'© open flightmaps association'});
+    map.addLayer({id:'ofm-layer',type:'raster',source:'ofm',layout:{visibility:'none'},paint:{'raster-opacity':0.92}});
+  }
+}
+function moveRouteTop(){ if(map.getLayer('route')) map.moveLayer('route'); }
+function switchMap(mode){
+ currentMapMode=mode;
+ document.querySelectorAll('.mapbtn').forEach(b=>b.classList.toggle('active',b.dataset.map===mode));
+ $('mapmode').textContent=mode==='road'?'STRADALE':mode==='aero'?'AERONAUTICA':'MONTAGNE';
+ ensureExtraSources();
+ map.setLayoutProperty('topo-layer','visibility',mode==='mountain'?'visible':'none');
+ map.setLayoutProperty('ofm-layer','visibility',mode==='aero'?'visible':'none');
+ if(mode==='mountain'){
+   // topo is a complete background; keep vector labels faintly beneath it.
+   map.setPaintProperty('topo-layer','raster-opacity',1);
+ }
+ moveRouteTop();
+}
+document.querySelectorAll('.mapbtn').forEach(b=>b.onclick=()=>switchMap(b.dataset.map));
+
+map.on('load',()=>{loaded=true;$('status').textContent='● MAPPA ONLINE';$('status').className='status ok';ensureExtraSources();switchMap(currentMapMode);syncRoute(); if(typeof scheduleAutoWx==='function')scheduleAutoWx();});
+map.on('error',e=>{if(!loaded){$('status').textContent='● MAPPA NON DISPONIBILE';$('status').className='status bad'}});
+setTimeout(()=>{if(!loaded){$('status').textContent='● MAPPA NON DISPONIBILE';$('status').className='status bad'}},9000);
+map.on('mousemove',e=>$('coord').innerHTML=`LAT ${e.lngLat.lat.toFixed(6)}° &nbsp; LON ${e.lngLat.lng.toFixed(6)}°`);
+map.on('click',e=>{let id='WP'+String(W.length+1).padStart(2,'0'), ll=e.lngLat;
+new maplibregl.Popup().setLngLat(ll).setHTML(`<div class=pop><b>NUOVO WAYPOINT</b><p>${ll.lat.toFixed(6)}°, ${ll.lng.toFixed(6)}°</p><label>Identificativo</label><input id=pid value="${id}" maxlength=12><label>Tipo</label><select id=ptype><option>USER WAYPOINT</option><option>AIRPORT</option><option>VOR</option><option>NDB</option><option>INT</option><option>INT-VRP</option></select><label>Country code</label><input id=pcc maxlength=2 placeholder="Country code"><label>Quota passaggio ft</label><input id=palt type=number min=0 max=30000 step=100 value="${$('altFt').value||2500}"><label>Ruolo nel piano</label><select id=prole><option value="AUTO">AUTO</option><option value="DEPARTURE">🟢 PARTENZA</option><option value="ENROUTE">PUNTO ROTTA</option><option value="ARRIVAL">🔴 ARRIVO</option></select><div id="elevStatus" style="font-size:10px;color:#9fb5c7;margin-top:4px">Quota terreno: acquisizione automatica…</div><button onclick="addPoint(${ll.lat},${ll.lng})">+ AGGIUNGI AL PIANO</button></div>`).addTo(map)});
+window.addPoint=(lat,lon)=>{let id=$('pid').value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,12);if(!id)return alert('Identificativo non valido');W.push({identifier:id,type:$('ptype').value,country_code:$('pcc').value.toUpperCase(),role:$('prole').value,alt_ft:+$('palt').value||+$('altFt').value||2500,ground_ft:window.__pendingGroundFt||null,lat,lon});normalizeRoles();document.querySelector('.maplibregl-popup')?.remove();render()};
+const rad=x=>x*Math.PI/180;
+function dist(a,b){let q=Math.sin(rad(b.lat-a.lat)/2)**2+Math.cos(rad(a.lat))*Math.cos(rad(b.lat))*Math.sin(rad(b.lon-a.lon)/2)**2;return 6880.13*Math.asin(Math.sqrt(q))}
+function brg(a,b){let dl=rad(b.lon-a.lon),y=Math.sin(dl)*Math.cos(rad(b.lat)),x=Math.cos(rad(a.lat))*Math.sin(rad(b.lat))-Math.sin(rad(a.lat))*Math.cos(rad(b.lat))*Math.cos(dl);return(Math.atan2(y,x)*180/Math.PI+360)%360}
+function syncRoute(){if(!loaded)return;markers.forEach(m=>m.remove());markers=[];W.forEach((w,i)=>{let el=document.createElement('div');el.style.cssText='width:18px;height:18px;border-radius:50%;background:#0d91bb;border:3px solid white;box-shadow:0 0 0 2px #092033';markers.push(new maplibregl.Marker({element:el}).setLngLat([w.lon,w.lat]).setPopup(new maplibregl.Popup().setText(`${i+1} • ${w.identifier}`)).addTo(map))});
+let data={type:'Feature',geometry:{type:'LineString',coordinates:W.map(w=>[w.lon,w.lat])}};
+if(map.getSource('route'))map.getSource('route').setData(data);else{map.addSource('route',{type:'geojson',data});map.addLayer({id:'route',type:'line',source:'route',paint:{'line-color':'#e33232','line-width':4}});moveRouteTop()}}
+function render(){let total=0,h='';W.forEach((w,i)=>{let d=i?dist(W[i-1],w):0;if(i)total+=d;h+=`<div class=row><div class=n>${i+1}</div><div><b>${roleBadge(w,i)} ${w.identifier}</b><div class=leg>${w.type} • PASS ${(w.alt_ft||+$('altFt').value||2500)} ft${w.ground_ft!=null?' • ELEV '+Math.round(w.ground_ft)+' ft':''}${i?' • '+brg(W[i-1],w).toFixed(0).padStart(3,'0')+'°':''}</div></div><div>${i?d.toFixed(1):'—'} NM</div><button class=x onclick="delWp(${i})">×</button></div>`});$('list').innerHTML=h;let mins=total/(+$('gs').value||120)*60;$('nm').textContent=total.toFixed(1);$('ete').textContent=String(Math.floor(mins/60)).padStart(2,'0')+':'+String(Math.round(mins%60)).padStart(2,'0');$('count').textContent=W.length;syncRoute(); if(typeof scheduleAutoWx==='function')scheduleAutoWx();}
+window.delWp=i=>{W.splice(i,1);render()}; $('gs').oninput=render;$('rev').onclick=()=>{W.reverse();normalizeRoles();render()};$('newp').onclick=()=>{if(confirm('Creare un nuovo piano?')){W=[];render()}};
+$('fit').onclick=()=>{if(!W.length)return;let b=new maplibregl.LngLatBounds();W.forEach(w=>b.extend([w.lon,w.lat]));map.fitBounds(b,{padding:70,maxZoom:12})};
+function check(show=true){let e=[];if(W.length<2)e.push('Servono almeno 2 waypoint.');if(W.length>300)e.push('Superati 300 route-point.');let s=new Set();W.forEach(w=>{if(!/^[A-Z0-9]{1,12}$/.test(w.identifier))e.push('ID non valido: '+w.identifier);let k=w.identifier+'|'+w.type+'|'+w.country_code;if(s.has(k))e.push('Duplicato: '+w.identifier);s.add(k)});if(show)alert(e.length?e.join('\\n'):'Controlli interni superati. Test finale necessario sul G1000 NXi reale.');return !e.length}$('check').onclick=()=>check(true);
+function esc(s){return String(s).replace(/[<>&'"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;',"'":'&apos;','"':'&quot;'}[c]))}function dl(n,t,type){let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type}));a.download=n;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
+$('export').onclick=()=>{if(!check(false)){check(true);return}let n=$('name').value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,12)||'FLIGHTPLAN',x=`<?xml version="1.0" encoding="utf-8"?><flight-plan xmlns="http://www8.garmin.com/xmlschemas/FlightPlan/v1"><created>${new Date().toISOString().replace(/\.\d{3}Z$/,'Z')}</created><waypoint-table>`;W.forEach(w=>x+=`<waypoint><identifier>${esc(w.identifier)}</identifier><type>${w.type}</type><country-code>${esc(w.country_code)}</country-code><lat>${w.lat.toFixed(8)}</lat><lon>${w.lon.toFixed(8)}</lon><comment></comment></waypoint>`);x+=`</waypoint-table><route><route-name>${esc(n)}</route-name><route-description>HELI FPL</route-description><flight-plan-index>1</flight-plan-index>`;W.forEach(w=>x+=`<route-point><waypoint-identifier>${esc(w.identifier)}</waypoint-identifier><waypoint-type>${w.type}</waypoint-type><waypoint-country-code>${esc(w.country_code)}</waypoint-country-code></route-point>`);dl(n+'.fpl',x+'</route></flight-plan>','application/xml')};
+$('save').onclick=()=>dl(($('name').value||'piano')+'.helifpl',JSON.stringify({name:$('name').value,gs:$('gs').value,waypoints:W},null,2),'application/json');
+$('open').onclick=()=>$('file').click();$('file').onchange=e=>{let f=e.target.files[0];if(!f)return;let r=new FileReader();r.onload=()=>{try{let d=JSON.parse(r.result);W=d.waypoints||[];$('name').value=d.name||'';$('gs').value=d.gs||120;render();$('fit').click()}catch(x){alert('File non valido')}};r.readAsText(f)};
+
+let simTimer=null,simMarker=null,weatherCache=null;
+function setDeparture(){let d=new Date(Date.now()+3600000); d.setMinutes(0,0,0); $('depTime').value=new Date(d-d.getTimezoneOffset()*60000).toISOString().slice(0,16)} setDeparture();
+
+async function geoSearch(){
+ let q=$('q').value.trim(); if(!q)return;
+ let mode=currentMapMode, query=q;
+ if(mode==='aero') query=q+' airport aerodrome heliport VOR';
+ if(mode==='mountain') query=q+' mountain peak river lake';
+ let url='https://photon.komoot.io/api/?limit=8&q='+encodeURIComponent(query);
+ try{let r=await fetch(url),d=await r.json(); let box=$('searchres');box.innerHTML='';(d.features||[]).forEach(f=>{let p=f.properties,c=f.geometry.coordinates,div=document.createElement('div');div.className='sr';div.textContent=[p.name,p.street,p.city,p.state,p.country].filter(Boolean).join(' • ');div.onclick=()=>{map.flyTo({center:c,zoom:mode==='road'?15:mode==='aero'?11:12});box.style.display='none'};box.appendChild(div)});box.style.display='block'}catch(e){alert('Ricerca online non disponibile.')}
+}
+$('searchBtn').onclick=geoSearch;$('q').onkeydown=e=>{if(e.key==='Enter')geoSearch()};
+
+async function routeWeather(){
+ if(W.length<2)return alert('Inserisci almeno 2 waypoint.');
+ let pts=[]; for(let i=0;i<W.length-1;i++){let a=W[i],b=W[i+1];for(let k=0;k<4;k++){let t=k/4;pts.push({lat:a.lat+(b.lat-a.lat)*t,lon:a.lon+(b.lon-a.lon)*t})}}pts.push(W[W.length-1]);
+ let lat=pts.map(p=>p.lat.toFixed(4)).join(','),lon=pts.map(p=>p.lon.toFixed(4)).join(',');
+ let vars='temperature_2m,precipitation,rain,showers,weather_code,cloud_cover,cloud_cover_low,cloud_cover_mid,cloud_cover_high,visibility,wind_speed_10m,wind_direction_10m,wind_gusts_10m,cape';
+ let url=`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=${vars}&wind_speed_unit=kn&timezone=auto&forecast_days=7`;
+ try{let r=await fetch(url);weatherCache=await r.json();if($('showWx').checked)drawWeatherRoute();evaluateWxHazards();alert('Meteo rotta acquisito e sincronizzato con l’orario di passaggio previsto lungo la rotta.')}catch(e){alert('Meteo non disponibile.')}
+}
+$('weatherBtn').onclick=routeWeather;
+
+function totalDist(){let t=0;for(let i=1;i<W.length;i++)t+=dist(W[i-1],W[i]);return t}
+function interpRoute(frac){let td=totalDist(),target=td*frac,run=0;for(let i=1;i<W.length;i++){let d=dist(W[i-1],W[i]);if(run+d>=target){let f=(target-run)/d;return {lat:W[i-1].lat+(W[i].lat-W[i-1].lat)*f,lon:W[i-1].lon+(W[i].lon-W[i-1].lon)*f,brg:brg(W[i-1],W[i])}}run+=d}return W[W.length-1]}
+function windAt(frac){if(!weatherCache)return {sp:0,dir:0,cloud:0,low:0,mid:0,high:0,vis:null,rain:0,showers:0,precip:0,code:0,cape:0};let arr=Array.isArray(weatherCache)?weatherCache:[weatherCache],x=arr[Math.min(arr.length-1,Math.floor(frac*arr.length))],times=x.hourly.time,dep=new Date($('depTime').value||Date.now()),idx=0,best=1e20;times.forEach((t,i)=>{let d=Math.abs(new Date(t)-dep);if(d<best){best=d;idx=i}});return {sp:x.hourly.wind_speed_10m[idx]||0,dir:x.hourly.wind_direction_10m[idx]||0,cloud:x.hourly.cloud_cover[idx]||0,low:x.hourly.cloud_cover_low?.[idx]||0,mid:x.hourly.cloud_cover_mid?.[idx]||0,high:x.hourly.cloud_cover_high?.[idx]||0,vis:x.hourly.visibility[idx],rain:x.hourly.rain?.[idx]||0,showers:x.hourly.showers?.[idx]||0,precip:x.hourly.precipitation?.[idx]||0,code:x.hourly.weather_code?.[idx]||0,cape:x.hourly.cape?.[idx]||0}}
+function drawProfile(frac=0){
+ let c=$('profile'),x=c.getContext('2d'),w=c.width,h=c.height;x.clearRect(0,0,w,h);
+ x.fillStyle='#0b1724';x.fillRect(0,0,w,h);
+ let alt=+$('altFt').value||2500,req=+$('acClear')?.value||1000;
+ let terrain=[];for(let i=0;i<=80;i++){let synthetic=700+320*Math.sin(i*.28)+180*Math.sin(i*.71)+90*Math.sin(i*.11);terrain.push(Math.max(100,synthetic))}
+ let maxT=Math.max(...terrain),scale=(h-42)/Math.max(alt+req,maxT+req,3500);
+ // clearance zones relative to the synthetic terrain profile
+ for(let i=0;i<terrain.length-1;i++){
+   let xx=i/(terrain.length-1)*w,xx2=(i+1)/(terrain.length-1)*w,t=terrain[i],clr=alt-t;
+   x.fillStyle=clr>=req?'rgba(45,170,90,.20)':clr>=req*.5?'rgba(235,185,45,.25)':'rgba(220,60,55,.28)';
+   x.fillRect(xx,0,Math.ceil(xx2-xx)+1,h-28);
+ }
+ // terrain silhouette
+ x.beginPath();x.moveTo(0,h-28);
+ terrain.forEach((t,i)=>x.lineTo(i/(terrain.length-1)*w,h-28-t*scale));
+ x.lineTo(w,h-28);x.closePath();x.fillStyle='#111820';x.fill();x.strokeStyle='#c7d1d9';x.stroke();
+ // planned altitude
+ let yy=h-28-alt*scale;x.strokeStyle='#55d7ff';x.lineWidth=2;x.beginPath();x.moveTo(0,yy);x.lineTo(w,yy);x.stroke();
+ // simulated aircraft
+ x.fillStyle='#ffcc33';x.fillRect(frac*w-4,yy-4,8,8);
+ // labels
+ x.fillStyle='#dce8f0';x.font='15px Segoe UI';x.fillText(`QUOTA PIANIFICATA ${alt} ft • CLEARANCE TARGET ${req} ft`,10,18);
+ let cur=terrain[Math.min(terrain.length-1,Math.round(frac*(terrain.length-1)))],clr=alt-cur;
+ let state=clr>=req?'ADEGUATA':clr>=req*.5?'MARGINE RIDOTTO':'INSUFFICIENTE';
+ $('clearanceMsg').textContent=`Clearance simulata al punto: ${Math.round(clr)} ft — ${state}. ATTENZIONE: in questa BETA il terreno è ancora sintetico; il colore NON è utilizzabile per separazione reale da terreno/ostacoli.`;
+}
+drawProfile();
+$('simBtn').onclick=()=>{if(W.length>=2){autoWeather(false);showSchedule(routeLegSchedule());evaluateWxHazards();}if(W.length<2)return alert('Inserisci almeno 2 waypoint.');if(simTimer){clearInterval(simTimer);simTimer=null;$('simBtn').textContent='▶ SIMULA';return}let f=0,td=totalDist(),tas=+$('gs').value||120,fuel=+$('fuel0').value||1000,ff=+$('ff').value||300;$('simBtn').textContent='■ STOP';simTimer=setInterval(()=>{f+=.005;if(f>1){clearInterval(simTimer);simTimer=null;$('simBtn').textContent='▶ SIMULA';return}let p=interpRoute(f),wx=windAt(f),rel=(wx.dir-p.brg)*Math.PI/180,head=wx.sp*Math.cos(rel),actual=Math.max(20,tas-head),hours=td*f/actual,fleft=fuel-ff*hours;$('sAlt').textContent=(+$('altFt').value||2500)+' ft';$('sGs').textContent=actual.toFixed(0)+' kt';$('sWind').textContent=wx.dir.toFixed(0).padStart(3,'0')+'°/'+wx.sp.toFixed(0)+' kt';$('sFuel').textContent=Math.max(0,fleft).toFixed(0)+' L';if(simMarker)simMarker.remove();simMarker=new maplibregl.Marker({color:'#ffcc33'}).setLngLat([p.lon,p.lat]).addTo(map);drawProfile(f)},100)};
+$('view3d').onclick=()=>toggleReal3D();
+
+
+
+let wxMarkers=[];
+function weatherIcon(wx){if(wx.code>=95 || wx.cape>800)return '⚡';if(wx.precip>0.2||wx.rain>0.2||wx.showers>0.2)return '🌧';if(wx.cloud>70)return '☁';if(wx.cloud>30)return '🌥';return '➤'}
+function weatherAtPointIndex(pointIndex, eta){
+ if(!weatherCache)return {sp:0,dir:0,cloud:0,low:0,mid:0,high:0,vis:null,rain:0,showers:0,precip:0,code:0,cape:0};
+ let arr=Array.isArray(weatherCache)?weatherCache:[weatherCache],x=arr[Math.min(arr.length-1,Math.max(0,pointIndex))],best=1e30,idx=0;
+ x.hourly.time.forEach((t,i)=>{let dd=Math.abs(new Date(t)-eta);if(dd<best){best=dd;idx=i}});
+ return {sp:x.hourly.wind_speed_10m[idx]||0,dir:x.hourly.wind_direction_10m[idx]||0,cloud:x.hourly.cloud_cover[idx]||0,low:x.hourly.cloud_cover_low?.[idx]||0,mid:x.hourly.cloud_cover_mid?.[idx]||0,high:x.hourly.cloud_cover_high?.[idx]||0,vis:x.hourly.visibility[idx],rain:x.hourly.rain?.[idx]||0,showers:x.hourly.showers?.[idx]||0,precip:x.hourly.precipitation?.[idx]||0,code:x.hourly.weather_code?.[idx]||0,cape:x.hourly.cape?.[idx]||0}
+}
+function drawWeatherRoute(){
+ wxMarkers.forEach(m=>m.remove());wxMarkers=[];if(!weatherCache||W.length<2)return;
+ let rows=routeLegSchedule(), dep=new Date($('depTime').value||Date.now()), totalH=rows.reduce((a,r)=>a+(r.end-r.start)/3600000,0);
+ for(let j=0;j<Math.min(17,weatherCache.length||1);j++){
+   let f=(weatherCache.length<=1?0:j/(weatherCache.length-1)),p=interpRoute(f),eta=new Date(dep.getTime()+totalH*f*3600000),wx=weatherAtPointIndex(j,eta),el=document.createElement('div');el.className='wxpoint';el.textContent=weatherIcon(wx);el.title=`${eta.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})} • vento ${wx.dir.toFixed(0)}°/${wx.sp.toFixed(0)}kt • nubi ${wx.cloud}% • pioggia ${wx.precip.toFixed(1)}mm`;
+   wxMarkers.push(new maplibregl.Marker({element:el}).setLngLat([p.lon,p.lat]).setPopup(new maplibregl.Popup().setHTML(`<b>METEO AL PASSAGGIO</b><br>${eta.toLocaleString()}<br>☁ ${wx.cloud}% (L ${wx.low}% / M ${wx.mid}% / H ${wx.high}%)<br>🌧 ${wx.precip.toFixed(1)} mm/h<br>➤ ${wx.dir.toFixed(0)}° / ${wx.sp.toFixed(0)} kt<br>Vis ${wx.vis?Math.round(wx.vis/1000)+' km':'—'}<br>${wx.code>=95?'⚡ Temporale previsto':''}`)).addTo(map))
+ }
+ $('wxlegend').style.display='block'
+}
+
+const DBKEY='heli_fpl_plans_v08';
+function getDB(){try{return JSON.parse(localStorage.getItem(DBKEY)||'{}')}catch(e){return {}}}
+function putDB(db){localStorage.setItem(DBKEY,JSON.stringify(db))}
+function planSnapshot(){return {name:$('name').value||'SENZA_NOME',gs:+$('gs').value||120,waypoints:W,altFt:+$('altFt').value||2500,ff:+$('ff').value||300,fuel0:+$('fuel0').value||1000,depTime:$('depTime').value,aircraft:heliValues(),updated:new Date().toISOString()}}
+function loadSnap(p){W=JSON.parse(JSON.stringify(p.waypoints||[]));$('name').value=p.name||'';$('gs').value=p.gs||120;$('altFt').value=p.altFt||2500;$('ff').value=p.ff||300;$('fuel0').value=p.fuel0||1000;if(p.depTime)$('depTime').value=p.depTime;if(p.aircraft){$('acType').value=p.aircraft.type||'HELICOPTER';$('acTas').value=p.aircraft.tas||120;$('acFuel').value=p.aircraft.fuel||1000;$('acFf').value=p.aircraft.ff||300;$('acReserve').value=p.aircraft.reserve||30;$('acClear').value=p.aircraft.clearance||1000;}normalizeRoles();render();setTimeout(()=>$('fit').click(),50)}
+function saveDB(asNew=false){let db=getDB(),p=planSnapshot(),key=(p.name||'SENZA_NOME').toUpperCase();if(!asNew && db[key] && !confirm('Sovrascrivere il piano '+key+'?'))return;db[key]=p;putDB(db);alert('Piano salvato nel database: '+key);renderDB()}
+function renderDB(){let db=getDB(),q=($('dbSearch')?.value||'').toUpperCase(),box=$('dbtable');if(!box)return;box.innerHTML='';Object.entries(db).filter(([k])=>k.includes(q)).sort((a,b)=>(b[1].updated||'').localeCompare(a[1].updated||'')).forEach(([k,p])=>{let d=0;for(let i=1;i<(p.waypoints||[]).length;i++)d+=dist(p.waypoints[i-1],p.waypoints[i]);let r=document.createElement('div');r.className='dbrow';r.innerHTML=`<b>${k}</b><span>${(p.waypoints||[]).length} WP</span><span>${d.toFixed(1)} NM</span><span>${p.gs||120} kt</span><span><button onclick="dbOpen('${k}')">APRI</button> <button onclick="dbReverse('${k}')">INVERTI + SALVA</button> <button onclick="dbDelete('${k}')">ELIMINA</button></span>`;box.appendChild(r)});if(!box.innerHTML)box.innerHTML='<div style="padding:20px;color:#91a7ba">Nessun piano salvato.</div>'}
+window.dbOpen=k=>{let p=getDB()[k];if(p){loadSnap(p);$('dbmodal').style.display='none'}}
+window.dbReverse=k=>{let db=getDB(),p=db[k];if(!p)return;let copy=JSON.parse(JSON.stringify(p));copy.waypoints.reverse();copy.waypoints.forEach((w,i)=>w.role=(i===0?'DEPARTURE':i===copy.waypoints.length-1?'ARRIVAL':'ENROUTE'));copy.name=(k+'_REV').slice(0,24);copy.updated=new Date().toISOString();db[copy.name]=copy;putDB(db);loadSnap(copy);renderDB();alert('Rotta invertita e risalvata come '+copy.name)}
+window.dbDelete=k=>{if(confirm('Eliminare '+k+' dal database?')){let db=getDB();delete db[k];putDB(db);renderDB()}}
+$('dbBtn').onclick=()=>{$('dbmodal').style.display='flex';renderDB()};$('dbClose').onclick=()=>$('dbmodal').style.display='none';$('dbSearch').oninput=renderDB;$('dbNew').onclick=()=>{$('dbmodal').style.display='none';W=[];$('name').value='NUOVO';render()};$('dbSave').onclick=()=>saveDB(false);
+
+function routeLegSchedule(){
+ let dep=new Date($('depTime').value||Date.now()),tas=+$('gs').value||120,ff=+$('ff').value||300,fuel=+$('fuel0').value||1000,rows=[],elapsed=0,used=0;
+ for(let i=1;i<W.length;i++){let a=W[i-1],b=W[i],d=dist(a,b),trk=brg(a,b),frac=(i-.5)/(W.length-1),wx=windAt(frac),rel=(wx.dir-trk)*Math.PI/180,head=wx.sp*Math.cos(rel),gs=Math.max(20,tas-head),hrs=d/gs,cons=ff*hrs,st=new Date(dep.getTime()+elapsed*3600000),en=new Date(st.getTime()+hrs*3600000);elapsed+=hrs;used+=cons;let wxEta=weatherCache?weatherAtPointIndex(Math.min((weatherCache.length||1)-1,Math.round(frac*((weatherCache.length||1)-1))),en):wx;rows.push({from:a.identifier,to:b.identifier,d,trk,gs,wind:wxEta,start:st,end:en,cons,fuel:Math.max(0,fuel-used),alt:b.alt_ft||+$('altFt').value||2500})}
+ return rows
+}
+function fmtTime(d){return d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}
+function showSchedule(rows){$('timeline').innerHTML='<div class=tl><b>LEG</b><b>ETD</b><b>ETA</b><b>FUEL</b><b>GS / WIND</b></div>'+rows.map(r=>`<div class=tl><span>${r.from}→${r.to}</span><span>${fmtTime(r.start)}</span><span>${fmtTime(r.end)}</span><span>${r.fuel.toFixed(0)}L</span><span>${r.alt}ft • ${r.gs.toFixed(0)}kt • ${weatherIcon(r.wind)} ${r.wind.dir.toFixed(0)}°/${r.wind.sp.toFixed(0)}kt • ☁${r.wind.cloud}% • 🌧${r.wind.precip.toFixed(1)}</span></div>`).join('')}
+
+
+function heliValues(){
+ return {type:$('acType').value||'HELICOPTER',tas:Math.max(20,+$('acTas').value||120),fuel:Math.max(0,+$('acFuel').value||1000),ff:Math.max(0,+$('acFf').value||300),reserve:Math.max(0,+$('acReserve').value||30),clearance:Math.max(0,+$('acClear').value||1000)}
+}
+function heliNavlog(){
+ if(W.length<2)return alert('Inserisci almeno 2 waypoint.');
+ let a=heliValues(); $('gs').value=a.tas;$('ff').value=a.ff;$('fuel0').value=a.fuel;
+ let rows=routeLegSchedule(), totalNm=rows.reduce((s,r)=>s+r.d,0), totalMin=rows.reduce((s,r)=>s+(r.end-r.start)/60000,0), fuelUsed=a.fuel-(rows.length?rows[rows.length-1].fuel:a.fuel), reserveL=a.ff*a.reserve/60, finalFuel=a.fuel-fuelUsed;
+ let status=finalFuel>=reserveL?'<span class=okx>RISERVA PARAMETRICA DISPONIBILE</span>':'<span class=warn>ATTENZIONE: fuel finale inferiore alla riserva parametrica</span>';
+ $('navsummary').innerHTML=`<b>${a.type}</b> • ${totalNm.toFixed(1)} NM • ${Math.floor(totalMin/60)}h ${Math.round(totalMin%60)}m • Fuel stimato ${fuelUsed.toFixed(0)} L • Finale ${finalFuel.toFixed(0)} L • Riserva impostata ${reserveL.toFixed(0)} L — ${status}`;
+ let html='<table class=navtable><thead><tr><th>TRATTA</th><th>TRK</th><th>NM</th><th>ALT</th><th>ETD</th><th>ETA</th><th>GS</th><th>VENTO</th><th>WX</th><th>FUEL RES.</th></tr></thead><tbody>';
+ rows.forEach((r,ri)=>{let phen=weatherIcon(r.wind)+(r.wind.precip>0.1?' '+r.wind.precip.toFixed(1)+'mm':'')+(r.wind.code>=95?' TS':'');html+=`<tr><td>${ri===0?'🟢 ':''}${r.from} → ${ri===rows.length-1?'🔴 ':''}${r.to}</td><td>${r.trk.toFixed(0)}°</td><td>${r.d.toFixed(1)}</td><td>${r.alt} ft</td><td>${fmtTime(r.start)}</td><td>${fmtTime(r.end)}</td><td>${r.gs.toFixed(0)} kt</td><td>${r.wind.dir.toFixed(0)}°/${r.wind.sp.toFixed(0)}kt</td><td>${phen} ☁${r.wind.cloud}%</td><td>${r.fuel.toFixed(0)} L</td></tr>`});
+ html+='</tbody></table><div class="aeroinfo"><b>Informazioni utili alla navigazione:</b> quota pianificata per punto, rotta vera, distanza, vento/meteo previsto all’ETA, GS e fuel residuo. Frequenze, navaid, spazi aerei, servizi e indisponibilità saranno mostrati solo quando presenti in una sorgente aeronautica strutturata/aggiornata: l’app non inventa dati mancanti.</div>';
+ $('navcontent').innerHTML=html;$('navmodal').style.display='flex'
+}
+$('navlogBtn').onclick=heliNavlog;$('navClose').onclick=()=>$('navmodal').style.display='none';
+
+// Keep profile values synchronized with the existing simulation fields.
+['acTas','acFuel','acFf'].forEach(id=>$(id).addEventListener('change',()=>{let a=heliValues();$('gs').value=a.tas;$('fuel0').value=a.fuel;$('ff').value=a.ff}));
+
+function aeroFeatureCard(props={}){
+ let lines=[];
+ const add=(label,val)=>{if(val!==undefined&&val!==null&&String(val).trim())lines.push(`<b>${label}:</b> ${String(val)}`)};
+ add('ICAO',props.icao||props.icao_code);add('Nome',props.name);add('Tipo',props.aeroway||props.type);
+ add('Elevazione',props.ele?props.ele+' m':null);add('Frequenza',props.frequency||props.freq);
+ add('VOR/NDB',props.navaid||props.ref);add('ILS',props.ils||props.ils_frequency);
+ add('Pista',props.runway||props.runway_ref);add('Superficie',props.surface);
+ add('Servizi',props.services||props.service);add('Radio',props.radio||props.communication);
+ add('Note',props.note);
+ return lines.length?lines.join('<br>'):'Dati aeronautici aggiuntivi non presenti nella sorgente interrogata.'
+}
+
+
+
+function normalizeRoles(){
+ if(!W.length)return;
+ // explicit user roles win; otherwise first/last are made unambiguous.
+ W.forEach((w,i)=>{if(!w.role||w.role==='AUTO')w.role=(i===0?'DEPARTURE':i===W.length-1?'ARRIVAL':'ENROUTE')});
+ let dep=W.findIndex(w=>w.role==='DEPARTURE');if(dep>0){W.forEach((w,i)=>{if(i!==dep&&w.role==='DEPARTURE')w.role='ENROUTE'})}
+ let arr=-1;W.forEach((w,i)=>{if(w.role==='ARRIVAL')arr=i});if(arr>=0){W.forEach((w,i)=>{if(i!==arr&&w.role==='ARRIVAL')w.role='ENROUTE'})}
+ if(W.length>1){W[0].role='DEPARTURE';W[W.length-1].role='ARRIVAL'}
+}
+function roleBadge(w,i){let r=w.role||(i===0?'DEPARTURE':i===W.length-1?'ARRIVAL':'ENROUTE');return r==='DEPARTURE'?'🟢 PARTENZA':r==='ARRIVAL'?'🔴 ARRIVO':'•'}
+async function acquireElevation(lat,lon){
+ window.__pendingGroundFt=null;let s=$('elevStatus');if(s)s.textContent='Quota terreno: acquisizione automatica…';
+ try{let r=await fetch(`https://api.open-meteo.com/v1/elevation?latitude=${lat}&longitude=${lon}`),d=await r.json(),m=d.elevation?.[0];if(Number.isFinite(m)){let ft=m*3.28084;window.__pendingGroundFt=ft;if(s)s.textContent=`Elevazione terreno acquisita: ${Math.round(ft)} ft (${Math.round(m)} m) • Copernicus DEM GLO-90`;if($('prole').value==='DEPARTURE'||$('prole').value==='ARRIVAL')$('palt').value=Math.round(ft/10)*10}}
+ catch(e){if(s)s.textContent='Elevazione automatica non disponibile: inserire/verificare manualmente.'}
+}
+function autoEndpointData(){
+ normalizeRoles();
+ if(W.length){let d=W[0],a=W[W.length-1]; if(d.ground_ft!=null && (!d.alt_ft||d.alt_ft===2500))d.alt_ft=Math.round(d.ground_ft/10)*10;if(a.ground_ft!=null && (!a.alt_ft||a.alt_ft===2500))a.alt_ft=Math.round(a.ground_ft/10)*10}
+}
+
+let wxAutoTimer=null,lastWxSignature='';
+function routeSignature(){return W.map(w=>`${w.lat.toFixed(3)},${w.lon.toFixed(3)},${w.alt_ft||0}`).join('|')+'|'+$('depTime').value}
+function clearWxMarkers(){wxMarkers.forEach(m=>m.remove());wxMarkers=[];$('wxlegend').style.display='none'}
+function toggleWxVisibility(){if(!$('showWx').checked){clearWxMarkers()}else if(weatherCache){drawWeatherRoute()}}
+$('showWx').addEventListener('change',toggleWxVisibility);
+
+function evaluateWxHazards(){
+ if(!weatherCache||W.length<2){$('wxguardStatus').className='wxalert';$('wxguardStatus').textContent='Meteo non disponibile: analisi pericoli non eseguita.';return []}
+ let arr=Array.isArray(weatherCache)?weatherCache:[weatherCache],dep=new Date($('depTime').value||Date.now()),rows=routeLegSchedule(),totalH=rows.reduce((a,r)=>a+(r.end-r.start)/3600000,0),haz=[];
+ arr.forEach((x,j)=>{let f=arr.length<=1?0:j/(arr.length-1),eta=new Date(dep.getTime()+totalH*f*3600000),wx=weatherAtPointIndex(j,eta),p=interpRoute(f);
+   let loc=`${p.lat.toFixed(2)}, ${p.lon.toFixed(2)} • ${fmtTime(eta)}`;
+   if(wx.code>=95 || wx.cape>=1200)haz.push({level:3,msg:`⚡ Possibile attività temporalesca/convettiva — ${loc}`});
+   if(wx.precip>=5)haz.push({level:2,msg:`🌧 Precipitazione significativa ${wx.precip.toFixed(1)} mm/h — ${loc}`});
+   if(wx.vis!==null && wx.vis<5000)haz.push({level:3,msg:`👁 Visibilità prevista ${Math.round(wx.vis/1000)} km — ${loc}`});
+   else if(wx.vis!==null && wx.vis<8000)haz.push({level:2,msg:`👁 Visibilità ridotta ${Math.round(wx.vis/1000)} km — ${loc}`});
+   if(wx.sp>=30)haz.push({level:3,msg:`💨 Vento previsto ${wx.sp.toFixed(0)} kt — ${loc}`});
+   else if(wx.sp>=20)haz.push({level:2,msg:`💨 Vento sostenuto ${wx.sp.toFixed(0)} kt — ${loc}`});
+   if(wx.cloud>=90 && wx.low>=75)haz.push({level:2,msg:`☁ Copertura bassa estesa (${wx.low}%) — ${loc}`});
+ });
+ haz.sort((a,b)=>b.level-a.level);
+ let el=$('wxguardStatus');
+ if(!haz.length){el.className='wxalert good';el.innerHTML='✓ Nessun indicatore meteo critico rilevato dai parametri disponibili lungo la rotta.'}
+ else{let severe=haz.some(x=>x.level===3);el.className='wxalert '+(severe?'danger':'warnx');el.innerHTML='<b>'+(severe?'⚠ ATTENZIONE METEO':'⚠ METEO DA VALUTARE')+'</b><br>'+haz.slice(0,4).map(x=>x.msg).join('<br>')}
+ return haz
+}
+async function autoWeather(force=false){
+ if(W.length<2)return;
+ let sig=routeSignature();if(!force && sig===lastWxSignature && weatherCache){evaluateWxHazards();return}
+ lastWxSignature=sig;
+ let pts=[];for(let i=0;i<W.length-1;i++){let a=W[i],b=W[i+1];for(let k=0;k<4;k++){let t=k/4;pts.push({lat:a.lat+(b.lat-a.lat)*t,lon:a.lon+(b.lon-a.lon)*t})}}pts.push(W[W.length-1]);
+ let lat=pts.map(p=>p.lat.toFixed(4)).join(','),lon=pts.map(p=>p.lon.toFixed(4)).join(','),vars='temperature_2m,precipitation,rain,showers,weather_code,cloud_cover,cloud_cover_low,cloud_cover_mid,cloud_cover_high,visibility,wind_speed_10m,wind_direction_10m,wind_gusts_10m,cape';
+ try{let r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=${vars}&wind_speed_unit=kn&timezone=auto&forecast_days=7`);weatherCache=await r.json();if($('showWx').checked)drawWeatherRoute();evaluateWxHazards()}
+ catch(e){$('wxguardStatus').className='wxalert warnx';$('wxguardStatus').textContent='⚠ Impossibile acquisire il meteo online: il volo può essere simulato, ma senza verifica meteo aggiornata.'}
+}
+function scheduleAutoWx(){clearTimeout(wxAutoTimer);wxAutoTimer=setTimeout(()=>autoWeather(false),900)}
+$('depTime').addEventListener('change',()=>autoWeather(true));
+
+
+let terrain3d=false, obstacleMarkers=[];
+function ensureTerrain3D(){
+ if(!map.getSource('terrain-dem'))map.addSource('terrain-dem',{type:'raster-dem',url:'https://tiles.mapterhorn.com/tilejson.json'});
+ if(!map.getSource('terrain-hill'))map.addSource('terrain-hill',{type:'raster-dem',url:'https://tiles.mapterhorn.com/tilejson.json'});
+ if(!map.getLayer('terrain-hillshade'))map.addLayer({id:'terrain-hillshade',type:'hillshade',source:'terrain-hill',paint:{'hillshade-exaggeration':0.35}}, map.getLayer('route')?'route':undefined);
+}
+async function toggleReal3D(){
+ try{
+   ensureTerrain3D();terrain3d=!terrain3d;
+   if(terrain3d){map.setTerrain({source:'terrain-dem',exaggeration:1.15});map.easeTo({pitch:70,bearing:25,duration:1000});$('view3d').textContent='3D ✓';await loadArtificialObstacles()}
+   else{map.setTerrain(null);map.easeTo({pitch:0,bearing:0,duration:700});$('view3d').textContent='3D';}
+   $('terrainBadge').textContent=`3D: ${terrain3d?'ON':'OFF'} • OSTACOLI: ${obstacleMarkers.length} censiti OSM`;
+ }catch(e){$('terrainBadge').textContent='3D non disponibile dalla sorgente DEM online.'}
+}
+async function loadArtificialObstacles(){
+ obstacleMarkers.forEach(m=>m.remove());obstacleMarkers=[];
+ let b=map.getBounds(),q=`[out:json][timeout:20];(node["man_made"~"tower|mast"]( ${b.getSouth()},${b.getWest()},${b.getNorth()},${b.getEast()} );node["power"="tower"]( ${b.getSouth()},${b.getWest()},${b.getNorth()},${b.getEast()} );node["aeroway"="navigationaid"]( ${b.getSouth()},${b.getWest()},${b.getNorth()},${b.getEast()} ););out tags center 250;`.replaceAll('( ','(');
+ try{
+  let r=await fetch('https://overpass-api.de/api/interpreter',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},body:'data='+encodeURIComponent(q)}),d=await r.json();
+  (d.elements||[]).forEach(o=>{let t=o.tags||{},el=document.createElement('div');el.className='obstacle-dot';
+    let height=t.height?`${t.height} m`:(t['seamark:landmark:height']?`${t['seamark:landmark:height']} m`:'altezza non censita');
+    let kind=t.man_made||t.power||t.aeroway||'ostacolo';
+    let pop=new maplibregl.Popup().setHTML(`<b>OSTACOLO ARTIFICIALE CENSITO</b><br>Tipo: ${kind}<br>Altezza: ${height}<br>${t.name||''}<br><small>Fonte: OpenStreetMap/Overpass — dato non certificato.</small>`);
+    obstacleMarkers.push(new maplibregl.Marker({element:el}).setLngLat([o.lon,o.lat]).setPopup(pop).addTo(map))
+  });
+  $('terrainBadge').textContent=`3D: ON • OSTACOLI: ${obstacleMarkers.length} censiti OSM`;
+ }catch(e){$('terrainBadge').textContent='3D: ON • ostacoli non acquisibili in questo momento'}
+}
+map.on('moveend',()=>{if(terrain3d){clearTimeout(window.__obsTimer);window.__obsTimer=setTimeout(loadArtificialObstacles,1200)}});
+
+function wxSummaryHTML(wx){
+ let vis=wx.vis==null?'—':(wx.vis/1000).toFixed(1)+' km';
+ return `<div class="wxsummary"><span>💨 ${wx.dir.toFixed(0)}°/${wx.sp.toFixed(0)} kt</span><span>☁ ${wx.cloud}%</span><span>👁 ${vis}</span><span>🌧 ${wx.precip.toFixed(1)} mm</span></div>`;
+}
+// Enrich the always-visible weather guard with numeric data from the worst sampled point.
+const _evaluateWxHazards=evaluateWxHazards;
+evaluateWxHazards=function(){
+ let hz=_evaluateWxHazards();
+ if(weatherCache&&W.length>=2){
+   let arr=Array.isArray(weatherCache)?weatherCache:[weatherCache],dep=new Date($('depTime').value||Date.now()),worst=null,score=-1;
+   arr.forEach((x,j)=>{let wx=weatherAtPointIndex(j,dep),s=(wx.code>=95?100:0)+(wx.cape||0)/100+(wx.precip||0)*2+(wx.sp||0)+(wx.vis!=null?Math.max(0,(10000-wx.vis)/500):0);if(s>score){score=s;worst=wx}});
+   if(worst)$('wxguardStatus').innerHTML += wxSummaryHTML(worst);
+ }
+ return hz
+}
+
+render();scheduleAutoWx();
+
+// ===== BETA 0.22 METAR VISIBILITY =====
+const md=$('mobileDrawer'), mb=$('drawerBackdrop'), mbody=$('drawerBody'), mtitle=$('drawerTitle');
+function closeMobileDrawer(){md.classList.remove('open');mb.classList.remove('show')}
+$('drawerClose').onclick=closeMobileDrawer;mb.onclick=closeMobileDrawer;
+function mobilePlan(){
+ normalizeRoles();
+ let x=`<div class="mobile-card"><b>${W.length?roleBadge(W[0],0)+' '+W[0].identifier:'Nessuna partenza'}</b><br>${W.length>1?roleBadge(W[W.length-1],W.length-1)+' '+W[W.length-1].identifier:'Nessun arrivo'}<br>${W.length} waypoint</div>`;
+ x+='<div id="mobilePlanList">'+W.map((w,i)=>`<div class="mobile-card"><b>${roleBadge(w,i)} ${w.identifier}</b><br>Quota ${Math.round(w.alt_ft||+$('altFt').value||2500)} ft${w.ground_ft!=null?' • Elev. '+Math.round(w.ground_ft)+' ft':''}</div>`).join('')+'</div>';
+ x+=`<div class="mobile-actions"><button onclick="closeMobileDrawer();document.getElementById('fit').click()">CENTRA</button><button onclick="document.getElementById('reverse').click();openMobileDrawer('plan')">INVERTI</button><button onclick="document.getElementById('dbBtn').click()">DATABASE</button><button onclick="document.getElementById('navlogBtn').click()">NAVLOG</button></div>`;
+ return x
+}
+function mobileWeather(){
+ let c=$('wxguardStatus'),cls=c?.className||'wxalert',txt=c?.innerHTML||'Meteo non ancora acquisito.';
+ return `<div class="mobile-card"><label><input id="mobileWxToggle" type="checkbox" ${$('showWx').checked?'checked':''}> VEDI METEO SULLA MAPPA</label></div><div id="mobileWxStatus" class="mobile-card ${cls.includes('danger')?'danger':cls.includes('warnx')?'warnx':cls.includes('good')?'good':''}">${txt}</div><div class="mobile-actions"><button id="mobileWxRefresh">AGGIORNA METEO</button><button onclick="closeMobileDrawer()">VEDI MAPPA</button></div>`
+}
+function mobileProfile(){
+ return `<div class="mobile-card"><b>PROFILO VERTICALE</b><br>Quota pianificata ${$('altFt').value} ft • Clearance target ${$('acClear')?.value||1000} ft</div><div class="mobile-card"><canvas id="mobileProfile" width="700" height="260" style="width:100%;height:180px"></canvas></div><div class="mobile-card">🟢 adeguata &nbsp; 🟡 margine ridotto &nbsp; 🔴 insufficiente<br><small>La clearance reale richiede DEM e ostacoli aeronautici certificati.</small></div>`
+}
+function paintMobileProfile(){
+ let src=$('profile'),dst=$('mobileProfile');if(!src||!dst)return;let x=dst.getContext('2d');x.drawImage(src,0,0,dst.width,dst.height)
+}
+function mobileTerrain(){
+ return `<div class="mobile-card"><b>MAPPA 3D & OSTACOLI</b><br>${$('terrainBadge')?.textContent||'3D non attivo'}</div><div class="mobile-actions"><button id="mobile3d">ATTIVA / DISATTIVA 3D</button><button onclick="closeMobileDrawer()">VEDI MAPPA</button></div><div class="mobile-card"><small>Gli ostacoli OSM possono essere incompleti. L'assenza di un simbolo non garantisce l'assenza di ostacoli.</small></div>`
+}
+function openMobileDrawer(kind){
+ let titles={plan:'PIANO DI VOLO',wx:'METEO ROTTA',profile:'PROFILO VERTICALE',navlog:'NAVLOG ELICOTTERO',terrain:'3D & OSTACOLI'};mtitle.textContent=titles[kind]||'HELI FPL';
+ if(kind==='plan')mbody.innerHTML=mobilePlan();
+ if(kind==='wx'){mbody.innerHTML=mobileWeather();$('mobileWxToggle').onchange=e=>{$('showWx').checked=e.target.checked;toggleWxVisibility()};$('mobileWxRefresh').onclick=()=>autoWeather(true)}
+ if(kind==='profile'){drawProfile(0);mbody.innerHTML=mobileProfile();setTimeout(paintMobileProfile,20)}
+ if(kind==='terrain'){mbody.innerHTML=mobileTerrain();$('mobile3d').onclick=async()=>{await toggleReal3D();openMobileDrawer('terrain')}}
+ if(kind==='navlog'){closeMobileDrawer();heliNavlog();return}
+ md.classList.add('open');mb.classList.add('show')
+}
+document.querySelectorAll('.mobile-nav button').forEach(b=>b.onclick=()=>openMobileDrawer(b.dataset.drawer));
+
+// Keep mobile weather view synchronized while preserving the existing guard.
+const __eval015=evaluateWxHazards;
+evaluateWxHazards=function(){let r=__eval015();if(md.classList.contains('open')&&mtitle.textContent==='METEO ROTTA')openMobileDrawer('wx');return r};
+
+// On mobile a changed route triggers the weather engine automatically; no visual toggle is required.
+const __sched015=scheduleAutoWx;
+scheduleAutoWx=function(){__sched015(); if(W.length>=2){clearTimeout(window.__wxMobileAuto);window.__wxMobileAuto=setTimeout(()=>autoWeather(false),1400)}}
+
+
+// ===== BETA 0.22 METAR VISIBILITY/METAR =====
+// Static GitHub Pages reads a same-origin snapshot generated by GitHub Actions.
+// This avoids browser CORS calls to AviationWeather.gov.
+let opmet17={generated:null,stations:[]};
+async function loadOpmet17(){
+ try{
+  const r=await fetch('./weather/italy_opmet.json?ts='+Date.now(),{cache:'no-store'});
+  if(!r.ok) throw new Error('HTTP '+r.status);
+  opmet17=await r.json(); return true;
+ }catch(e){ console.warn('OPMET snapshot unavailable',e); return false; }
+}
+function nm17(a,b,c,d){return hav(a,b,c,d)}
+function nearestOpmet17(lat,lon,limit=4){
+ return (opmet17.stations||[]).map(s=>({...s,_nm:nm17(lat,lon,s.lat,s.lon)}))
+ .sort((a,b)=>a._nm-b._nm).slice(0,limit)
+}
+function visCategory17(m){
+ if(!m)return 'N/D';
+ let v=Number(m.visibility_m),ceil=Number(m.ceiling_ft);
+ if((v>=0&&v<1600)||(ceil>=0&&ceil<500))return 'LIFR';
+ if((v>=0&&v<4800)||(ceil>=0&&ceil<1000))return 'IFR';
+ if((v>=0&&v<8000)||(ceil>=0&&ceil<3000))return 'MVFR';
+ return 'VFR';
+}
+function visText17(m){
+ if(!m||m.visibility_m==null)return 'N/D';
+ let km=Number(m.visibility_m)/1000; return km>=10?'≥ 10 km':km.toFixed(1)+' km';
+}
+function stationCard17(s){
+ let m=s.metar||null,cat=visCategory17(m);
+ return `<div class="mobile-card cat-${cat}"><b>${s.id} • ${Math.round(s._nm)} NM</b>
+ <div class="vis-hero">${visText17(m)}</div><div class="vis-unit">VISIBILITÀ METAR • ${cat}</div>
+ <div class="wx-row"><span>Ceiling</span><b>${m&&m.ceiling_ft!=null?Math.round(m.ceiling_ft)+' ft':'N/D'}</b></div>
+ <div class="wx-row"><span>Fenomeni</span><b>${m?.wx||'—'}</b></div>
+ <div class="wx-row"><span>Osservazione</span><b>${m?.obs_time||'N/D'}</b></div>
+ ${m?.raw?`<div class="wx-raw">${m.raw}</div>`:''}
+ ${s.taf?.raw?`<div style="margin-top:8px"><b>TAF</b><div class="wx-raw">${s.taf.raw}</div></div>`:'<div class="wx-row"><span>TAF</span><b>non disponibile</b></div>'}
+ </div>`
+}
+async function mobileAeroWx17(){
+ let ok=await loadOpmet17(), pts=[];
+ if(W.length){pts.push(['PARTENZA',W[0]]); if(W.length>1)pts.push(['ARRIVO',W[W.length-1]])}
+ else {let c=map.getCenter();pts.push(['CENTRO MAPPA',{lat:c.lat,lon:c.lng}])}
+ let body=`<div class="mobile-card"><b>VISIBILITÀ AERONAUTICA</b><br><small>METAR = osservazione. TAF = previsione terminale. Priorità alla visibilità e al ceiling.</small></div>`;
+ if(!ok){body+=`<div class="mobile-card danger"><b>Dati METAR/TAF non ancora disponibili.</b><br>Il repository deve contenere weather/italy_opmet.json generato dal workflow OPMET.</div>`}
+ else{
+  body+=`<div class="mobile-card"><small>Snapshot: ${opmet17.generated||'N/D'}</small></div>`;
+  for(const [lab,q] of pts){body+=`<h3>${lab}</h3>`+nearestOpmet17(q.lat,q.lon,3).map(stationCard17).join('')}
+ }
+ body+=`<div class="mobile-card"><small>Supporto alla pianificazione: verificare sempre briefing, METAR/TAF/SIGMET e pubblicazioni aeronautiche ufficiali.</small></div>`;
+ return body
+}
+const __open17=openMobileDrawer;
+openMobileDrawer=async function(kind){
+ if(kind!=='wx')return __open17(kind);
+ mtitle.textContent='VISIBILITÀ • METAR/TAF'; mbody.innerHTML='<div class="mobile-card">Acquisizione OPMET…</div>';
+ md.classList.add('open');mb.classList.add('show');
+ mbody.innerHTML=await mobileAeroWx17();
+}
+
+
+// ===== BETA 0.18 APPROVED IPHONE UI + 2 NM AGL =====
+let aglMarkers18=[];
+function mobileMode18(mode){
+ document.querySelectorAll('.mh-mode').forEach(b=>b.classList.toggle('active',b.dataset.mode===mode));
+ const old=document.querySelector(`.mapbtn[data-map="${mode}"]`); if(old)old.click();
+}
+document.querySelectorAll('.mh-mode').forEach(b=>b.onclick=()=>mobileMode18(b.dataset.mode));
+$('msearch').onclick=()=>{$('q').value=$('mq').value;geoSearch()};
+$('mq').onkeydown=e=>{if(e.key==='Enter')$('msearch').click()};
+$('mh3d').onclick=async()=>{await toggleReal3D();$('mh3d').classList.toggle('active',terrain3d);if(terrain3d)setTimeout(refreshAglMarkers18,1300);else clearAgl18()};
+$('mobileMapBtn').onclick=()=>{closeMobileDrawer();};
+function routePointAtNm18(nm){
+ let run=0;
+ for(let i=1;i<W.length;i++){
+  let a=W[i-1],b=W[i],d=dist(a,b);
+  if(run+d>=nm){let f=(nm-run)/d;return {lat:a.lat+(b.lat-a.lat)*f,lon:a.lon+(b.lon-a.lon)*f,alt:(+(a.alt_ft||$('altFt').value||2500))+(+(b.alt_ft||$('altFt').value||2500)-+(a.alt_ft||$('altFt').value||2500))*f,nm};}
+  run+=d;
+ } return null;
+}
+function clearAgl18(){aglMarkers18.forEach(m=>m.remove());aglMarkers18=[]}
+function refreshAglMarkers18(){
+ clearAgl18(); if(!terrain3d||W.length<2)return;
+ let td=totalDist();
+ for(let nm=2;nm<td;nm+=2){
+  let p=routePointAtNm18(nm); if(!p)continue;
+  let elevM=map.queryTerrainElevation([p.lon,p.lat],{exaggerated:false});
+  if(elevM==null)continue;
+  let groundFt=elevM*3.28084,agl=Math.max(0,p.alt-groundFt);
+  let el=document.createElement('div');el.className='agl-marker';
+  let lab=document.createElement('div');lab.className='agl-label';lab.innerHTML=`${nm.toFixed(0)} NM<em>AGL ${Math.round(agl)} ft</em>`;el.appendChild(lab);
+  aglMarkers18.push(new maplibregl.Marker({element:el,anchor:'bottom'}).setLngLat([p.lon,p.lat]).addTo(map));
+ }
+ updateMobileMetrics18();
+}
+function updateMobileMetrics18(){
+ let gs=+$('gs').value||120,alt=+$('altFt').value||2500,td=totalDist();
+ $('mhGs').textContent=Math.round(gs)+' kt';$('mhAlt').textContent=Math.round(alt)+' ft';
+ $('mhDist').textContent=W.length>1?td.toFixed(0)+' NM':'—';$('mhEte').textContent=W.length>1?Math.round(td/gs*60)+' min':'—';
+ if(W.length){
+  let p=W[0],e=terrain3d?map.queryTerrainElevation([p.lon,p.lat],{exaggerated:false}):null;
+  $('mhAgl').textContent=e==null?'—':Math.max(0,Math.round((+(p.alt_ft||alt))-e*3.28084))+' ft';
+ }
+}
+async function updateMobileOpmet18(){
+ let ok=await loadOpmet17();if(!ok)return;
+ let q=W.length?W[0]:{lat:map.getCenter().lat,lon:map.getCenter().lng},s=nearestOpmet17(q.lat,q.lon,1)[0];if(!s)return;
+ let m=s.metar||{},cat=visCategory17(m);
+ $('mwxStation').textContent=s.id+' • '+cat;$('mwxVis').textContent=visText17(m);$('mwxCat').textContent=cat+' • METAR';
+ $('mwxObs').textContent=(m.ceiling_ft!=null?'Ceiling '+Math.round(m.ceiling_ft)+' ft • ':'')+(m.wx||'nessun fenomeno codificato');
+ $('mwxRaw').textContent=m.raw?'METAR '+m.raw:'';$('mwxTaf').textContent=s.taf?.raw?'TAF '+s.taf.raw:'TAF non disponibile';
+}
+const __render18=render;
+render=function(){let r=__render18();updateMobileMetrics18();updateMobileOpmet18();if(terrain3d)setTimeout(refreshAglMarkers18,500);return r}
+map.on('terrain',()=>{if(terrain3d){clearTimeout(window.__agl18);window.__agl18=setTimeout(refreshAglMarkers18,400)}});
+map.on('moveend',()=>{updateMobileMetrics18();updateMobileOpmet18()});
+setTimeout(()=>{updateMobileMetrics18();updateMobileOpmet18()},1000);
+
+
+// ===== BETA 0.22 METAR VISIBILITY / CAMERA / AGL CORRIDOR =====
+function routeBearing19(){
+ if(W.length<2)return 25;
+ return brg(W[0],W[W.length-1]);
+}
+function fitTrue3D19(){
+ if(W.length<2)return;
+ let b=new maplibregl.LngLatBounds();
+ W.forEach(w=>b.extend([w.lon,w.lat]));
+ map.fitBounds(b,{padding:{top:125,bottom:150,left:55,right:55},duration:700,pitch:0,bearing:0});
+ setTimeout(()=>map.easeTo({pitch:76,bearing:routeBearing19()-18,zoom:Math.max(map.getZoom(),8.8),duration:900}),750);
+}
+const __toggle19=toggleReal3D;
+toggleReal3D=async function(){
+ try{
+  ensureTerrain3D(); terrain3d=!terrain3d;
+  if(terrain3d){
+   map.setTerrain({source:'terrain-dem',exaggeration:1.35});
+   fitTrue3D19(); $('view3d').textContent='3D ✓';
+   await loadArtificialObstacles();
+   setTimeout(refreshAglMarkers18,1800);
+  }else{
+   clearAgl18();map.setTerrain(null);map.easeTo({pitch:0,bearing:0,duration:700});$('view3d').textContent='3D';
+  }
+  $('terrainBadge').textContent=`3D: ${terrain3d?'ON':'OFF'} • OSTACOLI: ${obstacleMarkers.length} censiti OSM`;
+ }catch(e){console.warn(e);$('terrainBadge').textContent='3D DEM temporaneamente non disponibile.'}
+}
+refreshAglMarkers18=function(){
+ clearAgl18(); if(!terrain3d||W.length<2)return;
+ let td=totalDist();
+ for(let nm=2;nm<td;nm+=2){
+  let p=routePointAtNm18(nm);if(!p)continue;
+  let elevM=map.queryTerrainElevation([p.lon,p.lat],{exaggerated:false});if(elevM==null)continue;
+  let groundFt=elevM*3.28084,agl=Math.max(0,p.alt-groundFt);
+  let el=document.createElement('div');el.className='agl-marker';
+  let px=Math.max(34,Math.min(105,agl/28));el.style.setProperty('--agl-h',px+'px');
+  let lab=document.createElement('div');lab.className='agl-label';lab.innerHTML=`${nm.toFixed(0)} NM<em>AGL ${Math.round(agl)} ft</em>`;el.appendChild(lab);
+  aglMarkers18.push(new maplibregl.Marker({element:el,anchor:'bottom'}).setLngLat([p.lon,p.lat]).addTo(map));
+ }
+ updateMobileMetrics18();
+}
+// Avoid meaningless AGL if DEM is not active.
+updateMobileMetrics18=function(){
+ let gs=+$('gs').value||120,alt=+$('altFt').value||2500,td=totalDist();
+ $('mhGs').textContent=Math.round(gs)+' kt';$('mhAlt').textContent=Math.round(alt)+' ft';
+ $('mhDist').textContent=W.length>1?td.toFixed(0)+' NM':'—';$('mhEte').textContent=W.length>1?Math.round(td/gs*60)+' min':'—';
+ let q=W.length?W[0]:null,e=(terrain3d&&q)?map.queryTerrainElevation([q.lon,q.lat],{exaggerated:false}):null;
+ $('mhAgl').textContent=e==null?'—':Math.max(0,Math.round((+(q.alt_ft||alt))-e*3.28084))+' ft';
+}
+// If OPMET is not ready, say exactly so instead of endless "acquiring".
+updateMobileOpmet18=async function(){
+ let ok=await loadOpmet17();
+ if(!ok||!(opmet17.stations||[]).length){
+  $('mwxStation').textContent='METAR/TAF';$('mwxVis').textContent='—';
+  $('mwxCat').textContent='OPMET';$('mwxObs').textContent='Snapshot OPMET non popolato';
+  $('mwxRaw').textContent='Eseguire/controllare Update Italy OPMET in GitHub Actions.';$('mwxTaf').textContent='';return;
+ }
+ let q=W.length?W[0]:{lat:map.getCenter().lat,lon:map.getCenter().lng},s=nearestOpmet17(q.lat,q.lon,1)[0];if(!s)return;
+ let m=s.metar||{},cat=visCategory17(m);
+ $('mwxStation').textContent=s.id+' • '+cat;$('mwxVis').textContent=visText17(m);$('mwxCat').textContent=cat+' • METAR';
+ $('mwxObs').textContent=(m.ceiling_ft!=null?'Ceiling '+Math.round(m.ceiling_ft)+' ft • ':'')+(m.wx||'nessun fenomeno codificato');
+ $('mwxRaw').textContent=m.raw?'METAR '+m.raw:'';$('mwxTaf').textContent=s.taf?.raw?'TAF '+s.taf.raw:'TAF non disponibile';
+}
+
+
+// ===== BETA 0.22 METAR VISIBILITY CORRIDOR =====
+// Override mobile 3D: direct toggle, no legacy drawer.
+$('mh3d').onclick=async()=>{
+ await toggleReal3D();
+ $('mh3d').classList.toggle('active',terrain3d);
+ if(terrain3d)setTimeout(()=>{focusCorridor20();refreshAglMarkers18()},1200);
+};
+document.querySelectorAll('.mobile-nav button[data-drawer="terrain"]').forEach(b=>{
+ b.onclick=()=>{ closeMobileDrawer(); $('mh3d').click(); };
+});
+function focusCorridor20(){
+ if(!terrain3d||W.length<2)return;
+ // Show only a local corridor ahead rather than the whole route.
+ let a=W[0], td=totalDist(), targetNm=Math.min(18,Math.max(8,td*.22));
+ let c=routePointAtNm18(targetNm); if(!c)c=W[Math.min(1,W.length-1)];
+ let bb=new maplibregl.LngLatBounds();bb.extend([a.lon,a.lat]);bb.extend([c.lon,c.lat]);
+ map.fitBounds(bb,{padding:{top:150,bottom:180,left:75,right:75},pitch:0,bearing:0,duration:0});
+ let z=Math.max(10.2,Math.min(12.6,map.getZoom()+.6));
+ map.easeTo({center:[c.lon,c.lat],zoom:z,pitch:78,bearing:routeBearing19()-8,duration:1000});
+}
+toggleReal3D=async function(){
+ try{
+  ensureTerrain3D();terrain3d=!terrain3d;
+  if(terrain3d){
+   map.setTerrain({source:'terrain-dem',exaggeration:1.5});
+   $('view3d').textContent='3D ✓';
+   focusCorridor20();
+   loadArtificialObstacles().catch(()=>{});
+   setTimeout(refreshAglMarkers18,1500);
+  }else{
+   clearAgl18();map.setTerrain(null);map.easeTo({pitch:0,bearing:0,duration:650});$('view3d').textContent='3D';
+  }
+  $('terrainBadge').textContent=`3D: ${terrain3d?'ON':'OFF'} • OSTACOLI: ${obstacleMarkers.length} censiti OSM`;
+ }catch(e){console.warn(e);$('terrainBadge').textContent='3D DEM temporaneamente non disponibile.'}
+}
+// In 3D, limit AGL posts to visible/local corridor so the scene stays readable.
+refreshAglMarkers18=function(){
+ clearAgl18();if(!terrain3d||W.length<2)return;
+ let td=Math.min(totalDist(),24);
+ for(let nm=2;nm<=td;nm+=2){
+  let p=routePointAtNm18(nm);if(!p)continue;
+  let elevM=map.queryTerrainElevation([p.lon,p.lat],{exaggerated:false});if(elevM==null)continue;
+  let agl=Math.max(0,p.alt-elevM*3.28084);
+  let el=document.createElement('div');el.className='agl-marker';
+  let px=Math.max(26,Math.min(82,agl/35));el.style.setProperty('--agl-h',px+'px');
+  let lab=document.createElement('div');lab.className='agl-label';lab.innerHTML=`${nm.toFixed(0)} NM<em>AGL ${Math.round(agl)} ft</em>`;el.appendChild(lab);
+  aglMarkers18.push(new maplibregl.Marker({element:el,anchor:'bottom'}).setLngLat([p.lon,p.lat]).addTo(map));
+ }
+ updateMobileMetrics18();
+}
+
+
+// ===== BETA 0.21 CLEAN 3D + OPMET RECOVERY =====
+function focusCorridor21(){
+ if(!terrain3d||W.length<2)return;
+ let td=totalDist(), look=Math.min(12,Math.max(6,td*.16));
+ let p=routePointAtNm18(look)||W[1], a=W[0];
+ let bb=new maplibregl.LngLatBounds();bb.extend([a.lon,a.lat]);bb.extend([p.lon,p.lat]);
+ map.fitBounds(bb,{padding:{top:175,bottom:205,left:92,right:92},duration:0});
+ map.easeTo({center:[p.lon,p.lat],zoom:Math.max(11.1,Math.min(13,map.getZoom()+.9)),pitch:80,bearing:routeBearing19(),duration:850});
+}
+focusCorridor20=focusCorridor21;
+
+refreshAglMarkers18=function(){
+ clearAgl18();if(!terrain3d||W.length<2)return;
+ let td=Math.min(totalDist(),20);
+ for(let nm=2;nm<=td;nm+=2){
+  let p=routePointAtNm18(nm);if(!p)continue;
+  let em=map.queryTerrainElevation([p.lon,p.lat],{exaggerated:false});if(em==null)continue;
+  let agl=Math.max(0,p.alt-em*3.28084), major=(nm%4===0);
+  let el=document.createElement('div');el.className='agl-marker '+(major?'major':'tick');
+  el.style.setProperty('--agl-h',Math.max(18,Math.min(64,agl/45))+'px');
+  let lab=document.createElement('div');lab.className='agl-label';lab.innerHTML=`${nm.toFixed(0)} NM<em>AGL ${Math.round(agl)} ft</em>`;el.appendChild(lab);
+  aglMarkers18.push(new maplibregl.Marker({element:el,anchor:'bottom'}).setLngLat([p.lon,p.lat]).addTo(map));
+ }
+ updateMobileMetrics18();
+}
+
+// Robust OPMET loader: no-store first, then normal fetch, explicit diagnostics.
+loadOpmet17=async function(){
+ const urls=['./weather/italy_opmet.json?ts='+Date.now(),'./weather/italy_opmet.json'];
+ for(const u of urls){
+  try{
+   const r=await fetch(u,{cache:'no-store'});
+   if(!r.ok)continue;
+   const j=await r.json();
+   if(j&&Array.isArray(j.stations)){opmet17=j;return j.stations.length>0}
+  }catch(e){console.warn('OPMET',u,e)}
+ }
+ return false;
+}
+updateMobileOpmet18=async function(){
+ let ok=await loadOpmet17();
+ if(!ok){
+  $('mwxStation').textContent='METAR/TAF • OFFLINE';
+  $('mwxVis').textContent='—';$('mwxCat').textContent='OPMET';
+  $('mwxObs').textContent='Dati aeronautici non disponibili';
+  $('mwxRaw').textContent='Controllare weather/italy_opmet.json e GitHub Action Update Italy OPMET';
+  $('mwxTaf').textContent='';return;
+ }
+ let q=W.length?W[0]:{lat:map.getCenter().lat,lon:map.getCenter().lng};
+ let s=nearestOpmet17(q.lat,q.lon,1)[0];if(!s)return;
+ let m=s.metar||{},cat=visCategory17(m);
+ $('mwxStation').textContent=s.id+' • '+Math.round(s._nm)+' NM';
+ $('mwxVis').textContent=visText17(m);$('mwxCat').textContent=cat+' • METAR';
+ $('mwxObs').textContent=(m.ceiling_ft!=null?'Ceiling '+Math.round(m.ceiling_ft)+' ft • ':'')+(m.wx||'nessun fenomeno codificato');
+ $('mwxRaw').textContent=m.raw?'METAR '+m.raw:'METAR non disponibile';
+ $('mwxTaf').textContent=s.taf?.raw?'TAF '+s.taf.raw:'TAF non disponibile';
+}
+
+
+// ===== BETA 0.22 METAR VISIBILITY DECODER =====
+function rawVis22(raw){
+ if(!raw)return null;
+ // ICAO prevailing visibility: four digits in metres. 9999 = 10 km or more.
+ let toks=raw.trim().split(/\s+/);
+ for(let i=3;i<Math.min(toks.length,12);i++){
+   let t=toks[i];
+   if(t==='9999')return 10000;
+   if(/^\d{4}$/.test(t)){
+     let n=+t;
+     // reject time groups / QNH-like impossible visibility values
+     if(n>=50 && n<=9998)return n;
+   }
+ }
+ return null;
+}
+function metarVis22(m){
+ if(!m)return null;
+ let v=Number(m.visibility_m);
+ if(Number.isFinite(v)&&v>=0)return v;
+ return rawVis22(m.raw);
+}
+visCategory17=function(m){
+ if(!m)return 'N/D';
+ let v=metarVis22(m),ceil=Number(m.ceiling_ft);
+ if((v!=null&&v<1600)||(Number.isFinite(ceil)&&ceil<500))return 'LIFR';
+ if((v!=null&&v<4800)||(Number.isFinite(ceil)&&ceil<1000))return 'IFR';
+ if((v!=null&&v<8000)||(Number.isFinite(ceil)&&ceil<3000))return 'MVFR';
+ if(v!=null)return 'VFR'; return 'N/D';
+}
+visText17=function(m){
+ let v=metarVis22(m);if(v==null)return 'N/D';
+ if(v>=9999)return '≥ 10 km';
+ return (v/1000).toFixed(v<1000?1:1)+' km';
+}
+function italianArea22(s){
+ return s && s.lat>=35 && s.lat<=48.8 && s.lon>=5.5 && s.lon<=19.5;
+}
+nearestOpmet17=function(lat,lon,limit=4){
+ let arr=(opmet17.stations||[]), italy=arr.filter(italianArea22);
+ if(italy.length)arr=italy;
+ return arr.map(s=>({...s,_nm:nm17(lat,lon,s.lat,s.lon)})).sort((a,b)=>a._nm-b._nm).slice(0,limit);
+}
+updateMobileOpmet18=async function(){
+ let ok=await loadOpmet17();
+ if(!ok){$('mwxStation').textContent='METAR/TAF • OFFLINE';$('mwxVis').textContent='—';$('mwxCat').textContent='OPMET';$('mwxObs').textContent='Snapshot OPMET non disponibile';$('mwxRaw').textContent='Controllare GitHub Action Update Italy OPMET';$('mwxTaf').textContent='';return;}
+ let q=W.length?W[0]:{lat:map.getCenter().lat,lon:map.getCenter().lng},s=nearestOpmet17(q.lat,q.lon,1)[0];
+ if(!s){$('mwxObs').textContent='Nessuna stazione disponibile';return}
+ let m=s.metar||{},cat=visCategory17(m),v=visText17(m);
+ $('mwxStation').textContent=s.id+' • '+Math.round(s._nm)+' NM';
+ $('mwxVis').textContent=v;$('mwxCat').textContent=cat+' • METAR';
+ $('mwxObs').textContent=(m.ceiling_ft!=null?'Ceiling '+Math.round(m.ceiling_ft)+' ft • ':'')+(m.wx||'nessun fenomeno significativo codificato');
+ $('mwxRaw').textContent=m.raw?'METAR '+m.raw:'METAR non disponibile';
+ $('mwxTaf').textContent=s.taf?.raw?'TAF '+s.taf.raw:'TAF non disponibile';
+}
+// Keep approved UI, refine forward-looking 3D only.
+focusCorridor21=function(){
+ if(!terrain3d||W.length<2)return;
+ let td=totalDist(),look=Math.min(9,Math.max(5,td*.12)),p=routePointAtNm18(look)||W[1],a=W[0];
+ let bb=new maplibregl.LngLatBounds();bb.extend([a.lon,a.lat]);bb.extend([p.lon,p.lat]);
+ map.fitBounds(bb,{padding:{top:190,bottom:215,left:100,right:100},duration:0});
+ map.easeTo({center:[p.lon,p.lat],zoom:Math.max(11.8,Math.min(13.4,map.getZoom()+1.0)),pitch:82,bearing:routeBearing19(),duration:900});
+}
+focusCorridor20=focusCorridor21;
+setTimeout(updateMobileOpmet18,700);
+
+</script></body></html>
