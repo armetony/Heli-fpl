@@ -1,7 +1,7 @@
 {
   "name": "HELI FPL — Flight Planning & Helicopter Navigation",
   "short_name": "HELI FPL",
-  "description": "Flight planning e navigazione elicotteristica — App sviluppata da Antonio Armentano",
+  "description": "HELI FPL BETA 0.15 — interfaccia iPhone, flight planning e navigazione elicotteristica",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

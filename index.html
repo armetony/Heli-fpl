@@ -71,13 +71,49 @@ body{padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bot
 }
 </style>
 
+
+<style id="iphone-ui-v015">
+.mobile-nav,.mobile-drawer,.drawer-backdrop{display:none}
+@media(max-width:700px){
+ body{overflow:hidden}
+ #map{position:fixed!important;inset:calc(env(safe-area-inset-top) + 52px) 0 calc(env(safe-area-inset-bottom) + 62px) 0!important;height:auto!important;min-height:0!important}
+ header{position:fixed!important;z-index:40;top:env(safe-area-inset-top);left:0;right:0;height:52px;overflow-x:auto;flex-wrap:nowrap!important;background:#07111df2}
+ /* hide bulky desktop panels; mobile drawers expose them on demand */
+ .helipanel,.wxguard,.terrainbadge{display:none!important}
+ .mobile-nav{display:grid;position:fixed;z-index:80;left:0;right:0;bottom:0;padding:6px 5px calc(6px + env(safe-area-inset-bottom));grid-template-columns:repeat(5,1fr);gap:4px;background:#07111df5;border-top:1px solid #35536c}
+ .mobile-nav button{min-height:48px;border-radius:8px;font-size:10px;padding:3px}
+ .drawer-backdrop.show{display:block;position:fixed;z-index:88;inset:0;background:#0008}
+ .mobile-drawer{display:block;position:fixed;z-index:90;left:0;right:0;bottom:0;max-height:72dvh;transform:translateY(105%);transition:transform .22s ease;background:#0b1724;border:1px solid #35536c;border-radius:18px 18px 0 0;padding:10px 10px calc(12px + env(safe-area-inset-bottom));overflow:auto;box-shadow:0 -10px 35px #0008}
+ .mobile-drawer.open{transform:translateY(0)}
+ .drawer-handle{width:48px;height:5px;border-radius:5px;background:#71879a;margin:0 auto 8px}
+ .drawer-head{display:flex;justify-content:space-between;align-items:center;gap:8px;position:sticky;top:-10px;background:#0b1724;padding:8px 0;z-index:2}
+ .drawer-head b{font-size:15px}.drawer-close{min-width:42px;min-height:36px}
+ .mobile-card{border:1px solid #294158;background:#101f2e;border-radius:9px;padding:8px;margin:7px 0}
+ .mobile-actions{display:grid;grid-template-columns:1fr 1fr;gap:6px}.mobile-actions button{min-height:44px}
+ #mobilePlanList .mobile-card b{font-size:13px}
+ #mobileWxStatus.danger{background:#4b1717}#mobileWxStatus.warnx{background:#493b13}#mobileWxStatus.good{background:#123c28}
+}
+</style>
 </head><body>
+<div class="drawer-backdrop" id="drawerBackdrop"></div>
+<nav class="mobile-nav">
+ <button data-drawer="plan">🧭<br>PIANO</button>
+ <button data-drawer="wx">☁<br>METEO</button>
+ <button data-drawer="profile">📈<br>PROFILO</button>
+ <button data-drawer="navlog">📋<br>NAVLOG</button>
+ <button data-drawer="terrain">🏔<br>3D</button>
+</nav>
+<section class="mobile-drawer" id="mobileDrawer">
+ <div class="drawer-handle"></div><div class="drawer-head"><b id="drawerTitle">HELI FPL</b><button class="drawer-close" id="drawerClose">✕</button></div>
+ <div id="drawerBody"></div>
+</section>
+
 <div id="pwaStatus" style="position:fixed;z-index:200;left:8px;right:8px;bottom:calc(8px + env(safe-area-inset-bottom));display:none;background:#07111df2;border:1px solid #35536c;border-radius:10px;padding:9px;color:#eaf4fb;font:12px system-ui">
 <b>HELI FPL PWA</b> <span id="pwaText"></span>
 <button id="pwaClose" style="float:right">OK</button>
 </div>
 
-<header><div><div class="brand">HELI FPL</div><div class="sub">Flight Plan Creator • BETA 0.14 PWA MOBILE • App sviluppata da Antonio Armentano</div></div><div class="mapswitch">
+<header><div><div class="brand">HELI FPL</div><div class="sub">Flight Plan Creator • BETA 0.15 iPHONE UI • App sviluppata da Antonio Armentano</div></div><div class="mapswitch">
       <button class="mapbtn active" data-map="road">🛣 STRADALE</button>
       <button class="mapbtn" data-map="aero">✈ AERONAUTICA</button>
       <button class="mapbtn" data-map="mountain">⛰ MONTAGNE</button>
@@ -407,4 +443,48 @@ evaluateWxHazards=function(){
 }
 
 render();scheduleAutoWx();
+
+// ===== BETA 0.15 iPHONE UI =====
+const md=$('mobileDrawer'), mb=$('drawerBackdrop'), mbody=$('drawerBody'), mtitle=$('drawerTitle');
+function closeMobileDrawer(){md.classList.remove('open');mb.classList.remove('show')}
+$('drawerClose').onclick=closeMobileDrawer;mb.onclick=closeMobileDrawer;
+function mobilePlan(){
+ normalizeRoles();
+ let x=`<div class="mobile-card"><b>${W.length?roleBadge(W[0],0)+' '+W[0].identifier:'Nessuna partenza'}</b><br>${W.length>1?roleBadge(W[W.length-1],W.length-1)+' '+W[W.length-1].identifier:'Nessun arrivo'}<br>${W.length} waypoint</div>`;
+ x+='<div id="mobilePlanList">'+W.map((w,i)=>`<div class="mobile-card"><b>${roleBadge(w,i)} ${w.identifier}</b><br>Quota ${Math.round(w.alt_ft||+$('altFt').value||2500)} ft${w.ground_ft!=null?' • Elev. '+Math.round(w.ground_ft)+' ft':''}</div>`).join('')+'</div>';
+ x+=`<div class="mobile-actions"><button onclick="closeMobileDrawer();document.getElementById('fit').click()">CENTRA</button><button onclick="document.getElementById('reverse').click();openMobileDrawer('plan')">INVERTI</button><button onclick="document.getElementById('dbBtn').click()">DATABASE</button><button onclick="document.getElementById('navlogBtn').click()">NAVLOG</button></div>`;
+ return x
+}
+function mobileWeather(){
+ let c=$('wxguardStatus'),cls=c?.className||'wxalert',txt=c?.innerHTML||'Meteo non ancora acquisito.';
+ return `<div class="mobile-card"><label><input id="mobileWxToggle" type="checkbox" ${$('showWx').checked?'checked':''}> VEDI METEO SULLA MAPPA</label></div><div id="mobileWxStatus" class="mobile-card ${cls.includes('danger')?'danger':cls.includes('warnx')?'warnx':cls.includes('good')?'good':''}">${txt}</div><div class="mobile-actions"><button id="mobileWxRefresh">AGGIORNA METEO</button><button onclick="closeMobileDrawer()">VEDI MAPPA</button></div>`
+}
+function mobileProfile(){
+ return `<div class="mobile-card"><b>PROFILO VERTICALE</b><br>Quota pianificata ${$('altFt').value} ft • Clearance target ${$('acClear')?.value||1000} ft</div><div class="mobile-card"><canvas id="mobileProfile" width="700" height="260" style="width:100%;height:180px"></canvas></div><div class="mobile-card">🟢 adeguata &nbsp; 🟡 margine ridotto &nbsp; 🔴 insufficiente<br><small>La clearance reale richiede DEM e ostacoli aeronautici certificati.</small></div>`
+}
+function paintMobileProfile(){
+ let src=$('profile'),dst=$('mobileProfile');if(!src||!dst)return;let x=dst.getContext('2d');x.drawImage(src,0,0,dst.width,dst.height)
+}
+function mobileTerrain(){
+ return `<div class="mobile-card"><b>MAPPA 3D & OSTACOLI</b><br>${$('terrainBadge')?.textContent||'3D non attivo'}</div><div class="mobile-actions"><button id="mobile3d">ATTIVA / DISATTIVA 3D</button><button onclick="closeMobileDrawer()">VEDI MAPPA</button></div><div class="mobile-card"><small>Gli ostacoli OSM possono essere incompleti. L'assenza di un simbolo non garantisce l'assenza di ostacoli.</small></div>`
+}
+function openMobileDrawer(kind){
+ let titles={plan:'PIANO DI VOLO',wx:'METEO ROTTA',profile:'PROFILO VERTICALE',navlog:'NAVLOG ELICOTTERO',terrain:'3D & OSTACOLI'};mtitle.textContent=titles[kind]||'HELI FPL';
+ if(kind==='plan')mbody.innerHTML=mobilePlan();
+ if(kind==='wx'){mbody.innerHTML=mobileWeather();$('mobileWxToggle').onchange=e=>{$('showWx').checked=e.target.checked;toggleWxVisibility()};$('mobileWxRefresh').onclick=()=>autoWeather(true)}
+ if(kind==='profile'){drawProfile(0);mbody.innerHTML=mobileProfile();setTimeout(paintMobileProfile,20)}
+ if(kind==='terrain'){mbody.innerHTML=mobileTerrain();$('mobile3d').onclick=async()=>{await toggleReal3D();openMobileDrawer('terrain')}}
+ if(kind==='navlog'){closeMobileDrawer();heliNavlog();return}
+ md.classList.add('open');mb.classList.add('show')
+}
+document.querySelectorAll('.mobile-nav button').forEach(b=>b.onclick=()=>openMobileDrawer(b.dataset.drawer));
+
+// Keep mobile weather view synchronized while preserving the existing guard.
+const __eval015=evaluateWxHazards;
+evaluateWxHazards=function(){let r=__eval015();if(md.classList.contains('open')&&mtitle.textContent==='METEO ROTTA')openMobileDrawer('wx');return r};
+
+// On mobile a changed route triggers the weather engine automatically; no visual toggle is required.
+const __sched015=scheduleAutoWx;
+scheduleAutoWx=function(){__sched015(); if(W.length>=2){clearTimeout(window.__wxMobileAuto);window.__wxMobileAuto=setTimeout(()=>autoWeather(false),1400)}}
+
 </script></body></html>
