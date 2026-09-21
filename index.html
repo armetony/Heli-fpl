@@ -1,6 +1,6 @@
 <!doctype html><html lang="it"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>HELI FPL — BETA 0.4</title>
+<title>HELI FPL — BETA 0.16</title>
 <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.css">
 <style>
 *{box-sizing:border-box}html,body{height:100%;margin:0;font-family:Segoe UI,Arial;background:#07111d;color:#eef7ff}
@@ -94,6 +94,24 @@ body{padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bot
  #mobileWxStatus.danger{background:#4b1717}#mobileWxStatus.warnx{background:#493b13}#mobileWxStatus.good{background:#123c28}
 }
 </style>
+
+<style id="iphone-compact-v016">
+@media(max-width:700px){
+ header{height:58px!important;padding:4px 6px!important;align-items:center!important;overflow:hidden!important}
+ .brand{min-width:94px!important;max-width:94px!important;font-size:16px!important;line-height:16px!important}
+ .brand .sub{font-size:8px!important;line-height:10px!important;white-space:normal!important}
+ .mapswitch{margin-left:2px!important;gap:3px!important;display:grid!important;grid-template-columns:repeat(3,1fr)!important;flex:1!important}
+ .mapbtn{min-width:0!important;height:46px!important;padding:2px 4px!important;font-size:9px!important;line-height:11px!important}
+ .online{display:none!important}
+ #map{top:calc(env(safe-area-inset-top) + 58px)!important;bottom:calc(env(safe-area-inset-bottom) + 60px)!important;left:0!important;right:0!important}
+ .searchbox,.search,.searchbar{max-width:calc(100vw - 12px)!important}
+ .mobile-nav{grid-template-columns:repeat(5,minmax(0,1fr))!important;padding:4px 4px calc(4px + env(safe-area-inset-bottom))!important;gap:3px!important}
+ .mobile-nav button{min-width:0!important;min-height:48px!important;font-size:9px!important;line-height:12px!important;padding:2px!important;overflow:hidden!important}
+ /* Hide desktop-only floating blocks that steal map area on phone */
+ .coord{transform:scale(.82);transform-origin:left bottom}
+ .hint{font-size:10px!important;max-width:calc(100vw - 20px)!important}
+}
+</style>
 </head><body>
 <div class="drawer-backdrop" id="drawerBackdrop"></div>
 <nav class="mobile-nav">
@@ -113,7 +131,7 @@ body{padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bot
 <button id="pwaClose" style="float:right">OK</button>
 </div>
 
-<header><div><div class="brand">HELI FPL</div><div class="sub">Flight Plan Creator • BETA 0.15 iPHONE UI • App sviluppata da Antonio Armentano</div></div><div class="mapswitch">
+<header><div><div class="brand">HELI FPL</div><div class="sub">Flight Plan Creator • BETA 0.16 iPHONE COMPACT UI • App sviluppata da Antonio Armentano</div></div><div class="mapswitch">
       <button class="mapbtn active" data-map="road">🛣 STRADALE</button>
       <button class="mapbtn" data-map="aero">✈ AERONAUTICA</button>
       <button class="mapbtn" data-map="mountain">⛰ MONTAGNE</button>
@@ -444,7 +462,7 @@ evaluateWxHazards=function(){
 
 render();scheduleAutoWx();
 
-// ===== BETA 0.15 iPHONE UI =====
+// ===== BETA 0.16 iPHONE COMPACT UI =====
 const md=$('mobileDrawer'), mb=$('drawerBackdrop'), mbody=$('drawerBody'), mtitle=$('drawerTitle');
 function closeMobileDrawer(){md.classList.remove('open');mb.classList.remove('show')}
 $('drawerClose').onclick=closeMobileDrawer;mb.onclick=closeMobileDrawer;
